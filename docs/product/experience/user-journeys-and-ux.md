@@ -1,9 +1,10 @@
 # User journey e UX — IntentDraft (beta)
 
 **Documento:** `user-journeys-and-ux.md`  
-**Versione:** 1.0  
+**Versione:** 1.1  
+**Aggiornato:** 2026-11-01  
 **Requisiti correlati:** FR-001 … FR-016, NFR-007–NFR-009  
-**UI implementativa:** [`frontend-brand-ui.md`](frontend-brand-ui.md)
+**UI implementativa:** [`frontend-brand-ui.md`](frontend-brand-ui.md) · **Screenshot:** [`screenshots/README.md`](screenshots/README.md)
 
 ---
 
@@ -53,19 +54,42 @@ flowchart LR
 
 ---
 
-## 3. Struttura layout (senza mockup grafici)
+## 3. Struttura layout e schermate implementate
 
-### 3.1 Desktop
+Le figure seguenti mostrano il **percorso reale** in app (capture desktop, copy IT). Coerente con §1: ingresso → descrizione intento → (in thread) analisi, chiarimenti, prompt.
 
-- **Header:** logo/nome IntentDraft, link “Limiti e privacy”, “Nuova conversazione”.
-- **Colonna principale (70%):** thread conversazione (bubble user / assistant).
-- **Pannello laterale o sezione sotto (30%):** “Cosa ho capito” sticky quando disponibile.
-- **Zona prompt (full width sotto thread):** editor monospace o sans leggibile, min-height 200px.
+### 3.1 Ingresso pubblico e autenticazione
 
-### 3.2 Mobile
+![Landing — primo contatto](screenshots/landing-light.png)
+
+**Landing (`/`):** l’utente legge value prop e feature (conversazione guidata, istruzioni più chiare, pronto per il LLM) e sceglie **Accedi** o **Registrati**. Tema chiaro/scuro disponibile (vedi anche [`landing-dark.png`](screenshots/landing-dark.png) in [`screenshots/README.md`](screenshots/README.md)).
+
+![Login — account e OAuth](screenshots/login-light.png)
+
+**Login (`/login`):** accesso con Google o email/password; da qui si entra nell’area protetta `/app`. Copy allineata a FR-021 e tono non tecnico (§4).
+
+### 3.2 Area chat — stato iniziale (`idle`)
+
+![Chat empty state](screenshots/chat-empty-light.png)
+
+**Desktop — empty state:** header con profilo; sidebar (nuova chat, ricerca, selezione multipla, progetti, pin, recenti, documenti caricati); colonna principale con invito *“Descrivi in poche frasi cosa ti serve”* e composer (testo libero, allegati, contatore fino a 12 000 caratteri, Invio / Maiusc+Invio). Corrisponde allo stato `idle` in §2 e al messaggio benvenuto in §4.
+
+Variante **dark mode:** [`chat-empty-dark.png`](screenshots/chat-empty-dark.png).
+
+### 3.3 Layout logico (thread attivo — oltre lo screenshot)
+
+Quando l’utente invia il primo messaggio, la colonna principale mostra:
+
+- **Header:** logo IntentDraft, impostazioni, menu utente.
+- **Thread (~70%):** bubble user / assistant (chiarimenti, rifiuti scope, transizioni verso prompt).
+- **Pannello “Cosa ho capito”** (sticky quando disponibile): obiettivo, destinatario, assunzioni.
+- **Zona prompt** (sotto o full width): editor con sezioni, Copia / Rigenera / Salta.
+
+### 3.4 Mobile
 
 - Thread a pieno schermo; pannello interpretazione collassabile (“Dettagli”).
 - Prompt in sheet espandibile; Copia sempre visibile (FAB o barra fissa).
+- Long-press sulla sidebar per selezione multipla chat (bulk delete) — vedi implementazione `ChatSidebar`.
 
 ---
 

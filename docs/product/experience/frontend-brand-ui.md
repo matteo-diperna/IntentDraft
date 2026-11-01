@@ -1,9 +1,10 @@
 # Sistema UI brand — frontend IntentDraft
 
 **Documento:** `frontend-brand-ui.md`  
-**Versione:** 1.0  
-**Aggiornato:** 2026-10-25  
-**Codice:** `frontend/src/components/brand/`, `frontend/src/styles/`
+**Versione:** 1.1  
+**Aggiornato:** 2026-11-01  
+**Codice:** `frontend/src/components/brand/`, `frontend/src/styles/`  
+**Screenshot:** [`screenshots/README.md`](screenshots/README.md)
 
 ---
 
@@ -52,6 +53,46 @@ Import: `import { PublicPageFrame, AppPanelFrame, GlassPanel, AuthPageShell, Bra
 | `LoginPage` / `RegisterPage` | `AuthPageShell`                                               |
 | `LimitsPage`                 | `PublicPageFrame` + `GlassPanel`                              |
 | `ChatPage`                   | `AppPanelFrame` + `GlassPanel compact` + `brand-shell-header` |
+
+---
+
+## 3.1 Galleria screenshot (implementazione attuale)
+
+Le catture sotto documentano il **brand system applicato** alle pagine di riferimento (IT, desktop). Servono come baseline visiva per nuove schermate e per review portfolio.
+
+### Landing (`HomePage` — tema chiaro e scuro)
+
+`PublicPageFrame` centra hero, badge `brand-badge`, titolo `brand-heading-display` con gradient, CTA primary (`brand-btn-glow`) e outline (`brand-btn-outline-glass`), feature row `brand-feature-item`.
+
+![Landing IntentDraft — tema chiaro](screenshots/landing-light.png)
+
+*Landing pubblica in **light mode**: griglia sfumata, alone centrale animato, tagline “Dal tuo intento alla bozza di istruzioni per l’AI”, accesso e registrazione.*
+
+![Landing IntentDraft — tema scuro](screenshots/landing-dark.png)
+
+*Stessa composizione in **dark mode**: verifica contrasto AA su testo e bordi vetro.*
+
+### Auth (`LoginPage`)
+
+`AuthPageShell` + `surface-glass`: titolo `brand-heading-page`, pulsante Google, divider `brand-divider`, campi `brand-field`.
+
+![Schermata di login](screenshots/login-light.png)
+
+*Form **Accedi** con OAuth Google, email/password e link alla registrazione; footer con copyright e “Limiti e privacy”.*
+
+### App chat — empty state (`ChatPage`)
+
+Sidebar + `AppPanelFrame`: empty state con `brand-heading-hero`, composer `surface-glass-compact`, hint caratteri e allegati.
+
+![Area chat vuota — tema chiaro](screenshots/chat-empty-light.png)
+
+*Utente autenticato: sidebar con progetti, chat recenti e documenti; area principale invita a descrivere il bisogno in linguaggio naturale (4–5 frasi).*
+
+![Area chat vuota — tema scuro](screenshots/chat-empty-dark.png)
+
+*Shell chat in dark mode: scene attenuata (`BrandScene subtle`) per non competere con il composer.*
+
+Indice completo file PNG: [`screenshots/README.md`](screenshots/README.md).
 
 ---
 

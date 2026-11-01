@@ -40,7 +40,7 @@ Indice dettagliato: [`product/README.md`](product/README.md).
 | Area             | Contenuto                                   |
 | ---------------- | ------------------------------------------- |
 | **requirements** | Requisiti funzionali e non funzionali       |
-| **experience**   | User journey e UX                           |
+| **experience**   | User journey, UX, brand UI, [screenshot frontend](product/experience/screenshots/README.md) |
 | **architecture** | Architettura, database, operazioni FE/BE    |
 | **ai**           | Motore interpretazione e generazione prompt |
 | **decisions**    | Decisioni aperte e ADR                      |

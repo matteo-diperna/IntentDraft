@@ -2,13 +2,13 @@
 
 Indice della specifica beta. Concept sorgente: [`../concept/initial-brainstorming.md`](../concept/initial-brainstorming.md).
 
-### Stato (2026-10-25)
+### Stato (2026-11-01)
 
 - [X] Pacchetto documenti prodotto (sotto-cartelle per area)
 - [X] Decisioni founder (`decisions/open-questions-and-decisions.md` v1.2)
 - [X] Requisiti approvati (`requirements/product-requirements.md` v1.1)
-- [X] Frontend fase 1 (`frontend/` + `planning/frontend-roadmap.md`) — **verifica umana**
-- [ ] Backend **FOUND-011+** (Node API + Prisma/MySQL) — piano: [`planning/backend-implementation-plan.md`](planning/backend-implementation-plan.md)
+- [X] Frontend implementato (`frontend/` + `planning/frontend-roadmap.md`) — screenshot in [`experience/screenshots/`](experience/screenshots/README.md)
+- [X] Backend API + Prisma + PostgreSQL (Supabase) — vedi [`planning/backend-implementation-plan.md`](planning/backend-implementation-plan.md) e [`../../worklog.md`](../../worklog.md)
 - [X] Template UI + ADR stack (`decisions/adr-001-stack-and-auth.md`)
 
 ---
@@ -25,6 +25,7 @@ Indice della specifica beta. Concept sorgente: [`../concept/initial-brainstormin
 | ------------------------------- | -------------------------------------------------------------------------- |
 | User journey, stati UI, scenari | [`experience/user-journeys-and-ux.md`](experience/user-journeys-and-ux.md) |
 | Sistema UI brand (frontend)     | [`experience/frontend-brand-ui.md`](experience/frontend-brand-ui.md)       |
+| Screenshot UI (landing, chat, admin) | [`experience/screenshots/README.md`](experience/screenshots/README.md) |
 
 ## Architecture
 

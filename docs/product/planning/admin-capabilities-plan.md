@@ -50,6 +50,16 @@ Definire e implementare la **Admin Console** per utenti con `role = admin`:
 
 Utenti `role = user` continuano a vedere **solo** i propri dati (`user_id` da sessione).
 
+### 1.1 Console admin — UI di riferimento
+
+La console vive sotto **`/app/admin`** (tab Dashboard, Utenti, Uso API, Prompt, Piattaforma). RBAC: solo `User.role === admin`.
+
+![Dashboard console amministrazione](../experience/screenshots/admin-dashboard-light.png)
+
+*Tab **Dashboard** (tema chiaro): metriche aggregate — utenti totali e nuovi (7 gg), conversazioni, messaggi (7 gg), chiamate LLM e token input (7 gg), tasso prompt pronti, stato **Database** (OK/errore), file rifiutati dallo scan. Allineato alle card descritte in fase A2/A4 del piano e al recorder `idt_usag`.*
+
+Altre schermate frontend: [`../experience/screenshots/README.md`](../experience/screenshots/README.md).
+
 ---
 
 ## 2. Modello ruoli (RBAC minimale)

@@ -11,6 +11,7 @@ The repo is built as a **technical portfolio**: structured product docs, a share
 ## Table of contents
 
 - [Problem and value](#problem-and-value)
+- [UI preview](#ui-preview)
 - [Features](#features)
 - [Progress](#progress)
 - [Skills and stack](#skills-and-stack)
@@ -44,6 +45,31 @@ The repo is built as a **technical portfolio**: structured product docs, a share
 The product is **not** an open-ended autonomous agent that runs arbitrary multi-step jobs in the background; it **does** replace the manual “write a prompt and paste it into an external tool” loop for the **comprehension and composition** layer, by forwarding the refined request to the configured LLM stack on the server.
 
 Original concept: [`docs/concept/initial-brainstorming.md`](docs/concept/initial-brainstorming.md).
+
+---
+
+## UI preview
+
+The frontend ships a **glassmorphism** shell with **light/dark** themes and **IT/EN** copy. Captures below match the current build (public landing → login → chat empty state → admin dashboard).
+
+| Screen | Preview |
+| ------ | ------- |
+| **Landing** | ![IntentDraft landing — light theme](docs/product/experience/screenshots/landing-light.png) |
+| **Landing (dark)** | ![IntentDraft landing — dark theme](docs/product/experience/screenshots/landing-dark.png) |
+| **Login** | ![Login with Google and email](docs/product/experience/screenshots/login-light.png) |
+| **Chat (empty)** | ![Signed-in chat empty state](docs/product/experience/screenshots/chat-empty-light.png) |
+| **Chat (dark)** | ![Chat empty state — dark theme](docs/product/experience/screenshots/chat-empty-dark.png) |
+| **Admin dashboard** | ![Admin console metrics](docs/product/experience/screenshots/admin-dashboard-light.png) |
+
+**Landing** — Hero explains the product (“From your intent to a draft of instructions for AI”), with sign-in/register and three highlights: guided conversation, clearer instructions, ready for your LLM.
+
+**Login** — Google OAuth plus email/password; links to registration and limits/privacy.
+
+**Chat** — After auth, the sidebar lists projects, pinned/recent chats, and uploaded documents; the main pane prompts the user to describe their need in plain language (composer supports attachments and a 12k character limit).
+
+**Admin** — Operators with the `admin` role open `/app/admin` for platform metrics (users, conversations, LLM usage, DB health).
+
+Full captions and file index: [`docs/product/experience/screenshots/README.md`](docs/product/experience/screenshots/README.md) · UX journeys: [`docs/product/experience/user-journeys-and-ux.md`](docs/product/experience/user-journeys-and-ux.md) · Brand system: [`docs/product/experience/frontend-brand-ui.md`](docs/product/experience/frontend-brand-ui.md).
 
 ---
 

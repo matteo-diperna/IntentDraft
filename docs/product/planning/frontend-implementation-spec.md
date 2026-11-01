@@ -39,6 +39,19 @@ Completare la **struttura frontend** dell’app web **IntentDraft** in modo che:
 
 **Rebrand (§17 Fase 0 — completato):** testi UI (i18n), `index.html`, README, `package.json`, cartella repo `intentdraft/`, remote GitHub `intentdraft`. Chiavi `localStorage` / Zustand: prefisso `intentdraft_*` con lettura one-shot delle chiavi legacy `promptpilot_*` per non perdere sessioni demo.
 
+### 1.3.1 Riferimento visivo (screenshot UI implementata)
+
+Baseline per accettazione visiva e regressioni manuali — **non** sostituiscono Playwright, ma documentano layout e copy attesi:
+
+| Schermata | File | Note |
+| --------- | ---- | ---- |
+| Landing | [`../experience/screenshots/landing-light.png`](../experience/screenshots/landing-light.png) | `HomePage`, light/dark |
+| Login | [`../experience/screenshots/login-light.png`](../experience/screenshots/login-light.png) | Google + email, `AuthPageShell` |
+| Chat empty | [`../experience/screenshots/chat-empty-light.png`](../experience/screenshots/chat-empty-light.png) | Sidebar + composer, stato `idle` |
+| Admin dashboard | [`../experience/screenshots/admin-dashboard-light.png`](../experience/screenshots/admin-dashboard-light.png) | `/app/admin`, tab Dashboard |
+
+Indice e descrizioni: [`../experience/screenshots/README.md`](../experience/screenshots/README.md). Dettaglio brand: [`../experience/frontend-brand-ui.md`](../experience/frontend-brand-ui.md) §3.1.
+
 ### 1.4 Estensione richiesta dal founder (non ancora in FR ufficiali)
 
 | Feature | Stato docs prodotto | Istruzione implementazione |
