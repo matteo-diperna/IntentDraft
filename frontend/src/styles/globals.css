@@ -325,6 +325,21 @@
     @apply rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold tabular-nums text-primary;
   }
 
+  .sidebar-selection-dock {
+    animation: sidebar-selection-dock-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes sidebar-selection-dock-in {
+    from {
+      opacity: 0;
+      transform: translateY(0.65rem) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
   .document-preview-backdrop-enter {
     animation: document-preview-backdrop-in 0.25s ease-out both;
   }

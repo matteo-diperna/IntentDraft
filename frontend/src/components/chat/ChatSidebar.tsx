@@ -1,11 +1,13 @@
 import type React from 'react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Check,
   ChevronDown,
   FileSpreadsheet,
   FileText,
   FolderKanban,
   FolderPlus,
+  ListChecks,
   PanelLeftClose,
   Pin,
   PenSquare,
@@ -32,6 +34,7 @@ type ChatSidebarProps = {
   onNewChat: () => void;
   onSelect: (id: string) => void;
   onDeleteRecent: (id: string) => void;
+  onDeleteMany: (ids: string[]) => void;
   onPinRecent: (id: string) => void;
   onMoveToProject: (conversationId: string, projectId: string | null) => void;
   onRenameRecent: (id: string, title: string) => void;
@@ -127,11 +130,17 @@ function RowAction({
   );
 }
 
+const LONG_PRESS_MS = 480;
+
 function ChatListItem({
   active,
   label,
   onSelect,
+  onRowClick,
+  onLongPress,
   collapsed,
+  selectionMode,
+  selected,
   recentActions,
   renaming,
   renameValue,
@@ -143,7 +152,11 @@ function ChatListItem({
   active: boolean;
   label: string;
   onSelect: () => void;
+  onRowClick?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  onLongPress?: () => void;
   collapsed: boolean;
+  selectionMode?: boolean;
+  selected?: boolean;
   recentActions?: {
     pinLabel: string;
     renameLabel: string;
@@ -161,6 +174,16 @@ function ChatListItem({
   onRenameCommit?: () => void;
   onRenameCancel?: () => void;
 }) {
+  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressTriggeredRef = useRef(false);
+
+  const clearLongPress = () => {
+    if (longPressRef.current) {
+      clearTimeout(longPressRef.current);
+      longPressRef.current = null;
+    }
+  };
+
   if (collapsed) {
     return (
       <button
@@ -205,22 +228,66 @@ function ChatListItem({
   return (
     <div
       className={cn(
-        'group relative min-w-0 overflow-hidden rounded-lg transition-colors',
-        active ? 'sidebar-nav-item-active' : 'hover:bg-primary/5',
+        'group relative flex min-w-0 items-stretch overflow-hidden rounded-lg transition-colors',
+        selectionMode && selected && 'bg-primary/12 ring-1 ring-inset ring-primary/25',
+        !selectionMode && active && 'sidebar-nav-item-active',
+        !selectionMode && !active && 'hover:bg-primary/5',
       )}
     >
+      {selectionMode ? (
+        <span
+          className={cn(
+            'flex w-9 shrink-0 items-center justify-center transition-transform duration-200',
+            selected ? 'scale-100' : 'scale-90 opacity-80',
+          )}
+          aria-hidden
+        >
+          <span
+            className={cn(
+              'flex h-[18px] w-[18px] items-center justify-center rounded-full border-2 transition-colors',
+              selected
+                ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                : 'border-muted-foreground/35 bg-background',
+            )}
+          >
+            {selected ? <Check className="h-2.5 w-2.5 stroke-[3]" /> : null}
+          </span>
+        </span>
+      ) : null}
       <button
         type="button"
-        onClick={onSelect}
+        onClick={(e) => {
+          if (longPressTriggeredRef.current) {
+            longPressTriggeredRef.current = false;
+            return;
+          }
+          if (selectionMode && onRowClick) onRowClick(e);
+          else onSelect();
+        }}
+        onPointerDown={(e) => {
+          if (selectionMode || e.button !== 0 || !onLongPress) return;
+          longPressTriggeredRef.current = false;
+          clearLongPress();
+          longPressRef.current = setTimeout(() => {
+            longPressTriggeredRef.current = true;
+            onLongPress();
+          }, LONG_PRESS_MS);
+        }}
+        onPointerUp={clearLongPress}
+        onPointerLeave={clearLongPress}
+        onPointerCancel={clearLongPress}
         className={cn(
-          'block w-full truncate py-2 pl-3 pr-3 text-left text-sm transition-[padding]',
-          recentActions?.onMove ? 'group-hover:pr-[7.25rem]' : 'group-hover:pr-[5.5rem]',
-          active ? 'font-medium text-primary' : 'font-medium text-foreground/90',
+          'min-w-0 flex-1 truncate py-2 text-left text-sm transition-[padding]',
+          selectionMode ? 'pl-0 pr-3' : 'pl-3 pr-3',
+          !selectionMode && (recentActions?.onMove ? 'group-hover:pr-[7.25rem]' : 'group-hover:pr-[5.5rem]'),
+          !selectionMode && active && 'font-medium text-primary',
+          selectionMode && selected && 'font-medium text-foreground',
+          !selectionMode && !active && 'font-medium text-foreground/90',
         )}
       >
         {label}
       </button>
-      {recentActions && (
+      {recentActions && !selectionMode && (
         <div
           className={cn(
             'pointer-events-none absolute inset-y-0 right-0 flex items-center pl-4 pr-0.5',
@@ -282,6 +349,7 @@ export function ChatSidebar({
   onNewChat,
   onSelect,
   onDeleteRecent,
+  onDeleteMany,
   onPinRecent,
   onMoveToProject,
   onRenameRecent,
@@ -297,7 +365,10 @@ export function ChatSidebar({
   const [renameDraft, setRenameDraft] = useState('');
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const selectionAnchorRef = useRef<string | null>(null);
   const open = useUiStore((s) => s.sidebarOpen);
   const toggleSidebar = useUiStore((s) => s.toggleSidebar);
   const mobileSidebarOpen = useUiStore((s) => s.mobileSidebarOpen);
@@ -335,13 +406,108 @@ export function ChatSidebar({
   const showRecentSection = !searching || recent.length > 0;
   const projectsOpen = searching || projectsExpanded;
 
+  const visibleSelectableIds = useMemo(() => {
+    const ids: string[] = [];
+    if (showProjectsSection && projectsOpen) {
+      for (const folder of projectFolders) {
+        const folderChats = chatsInProject(folder.id);
+        if (searching && folderChats.length === 0) continue;
+        ids.push(...folderChats.map((c) => c.id));
+      }
+    }
+    if (showPinnedSection) ids.push(...pinned.map((c) => c.id));
+    if (showRecentSection) ids.push(...recent.map((c) => c.id));
+    return ids;
+  }, [
+    showProjectsSection,
+    projectsOpen,
+    projectFolders,
+    chatsInProject,
+    searching,
+    showPinnedSection,
+    pinned,
+    showRecentSection,
+    recent,
+  ]);
+
+  const exitSelectionMode = useCallback(() => {
+    setSelectionMode(false);
+    setSelectedIds(new Set());
+    selectionAnchorRef.current = null;
+  }, []);
+
+  const enterSelectionMode = useCallback((initialId?: string) => {
+    setSearchOpen(false);
+    setSearchQuery('');
+    setSelectionMode(true);
+    setSelectedIds(initialId ? new Set([initialId]) : new Set());
+    selectionAnchorRef.current = initialId ?? null;
+  }, []);
+
   useEffect(() => {
     if (searchOpen && open) searchInputRef.current?.focus();
   }, [searchOpen, open]);
 
+  useEffect(() => {
+    if (!selectionMode) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') exitSelectionMode();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [selectionMode, exitSelectionMode]);
+
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const live = new Set(conversations.map((c) => c.id));
+      const next = new Set([...prev].filter((id) => live.has(id)));
+      if (next.size === 0 && prev.size > 0 && selectionMode) {
+        queueMicrotask(() => exitSelectionMode());
+      }
+      return next.size === prev.size ? prev : next;
+    });
+  }, [conversations, selectionMode, exitSelectionMode]);
+
   const closeSearch = () => {
     setSearchOpen(false);
     setSearchQuery('');
+  };
+
+  const toggleSelected = useCallback((id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+    selectionAnchorRef.current = id;
+  }, []);
+
+  const handleSelectionClick = useCallback(
+    (id: string, e: React.MouseEvent<HTMLButtonElement>) => {
+      if (e.shiftKey && selectionAnchorRef.current) {
+        const anchor = selectionAnchorRef.current;
+        const a = visibleSelectableIds.indexOf(anchor);
+        const b = visibleSelectableIds.indexOf(id);
+        if (a >= 0 && b >= 0) {
+          const [start, end] = a < b ? [a, b] : [b, a];
+          const range = visibleSelectableIds.slice(start, end + 1);
+          setSelectedIds((prev) => {
+            const next = new Set(prev);
+            for (const itemId of range) next.add(itemId);
+            return next;
+          });
+          return;
+        }
+      }
+      toggleSelected(id);
+    },
+    [toggleSelected, visibleSelectableIds],
+  );
+
+  const selectAllVisible = () => {
+    setSelectedIds(new Set(visibleSelectableIds));
+    selectionAnchorRef.current = visibleSelectableIds[0] ?? null;
   };
 
   const startRename = (c: Conversation) => {
@@ -370,8 +536,17 @@ export function ChatSidebar({
     setMobileSidebarOpen(false);
   };
 
+  const selectedCount = selectedIds.size;
+
+  const chatItemExtras = (c: Conversation) => ({
+    selectionMode,
+    selected: selectedIds.has(c.id),
+    onRowClick: (e: React.MouseEvent<HTMLButtonElement>) => handleSelectionClick(c.id, e),
+    onLongPress: () => enterSelectionMode(c.id),
+  });
+
   const rowActionsFor = (c: Conversation) =>
-    renamingId === c.id
+    selectionMode || renamingId === c.id
       ? undefined
       : {
           pinLabel: c.pinned ? t('sidebar.unpinChat') : t('sidebar.pinChat'),
@@ -485,6 +660,26 @@ export function ChatSidebar({
               >
                 <Search className="h-5 w-5" />
               </Button>
+              {visibleSelectableIds.length > 0 ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className={cn(
+                    'h-9 w-9 shrink-0 transition-[background-color,color,transform] duration-300 ease-out',
+                    selectionMode && 'scale-105 bg-primary/10 text-primary',
+                  )}
+                  aria-label={selectionMode ? t('sidebar.exitSelection') : t('sidebar.selectChats')}
+                  aria-pressed={selectionMode}
+                  title={selectionMode ? t('sidebar.exitSelection') : t('sidebar.selectChats')}
+                  onClick={() => {
+                    if (selectionMode) exitSelectionMode();
+                    else enterSelectionMode();
+                  }}
+                >
+                  <ListChecks className="h-5 w-5" />
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="ghost"
@@ -526,7 +721,12 @@ export function ChatSidebar({
 
         {open ? (
           <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-x-hidden">
-            <SidebarNavCard className="flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden">
+            <SidebarNavCard
+              className={cn(
+                'relative flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden',
+                selectionMode && 'pb-[4.25rem]',
+              )}
+            >
               {searching && !hasChatMatches && (
                 <p className="px-2.5 py-2 text-xs text-muted-foreground">{t('sidebar.noSearchResults')}</p>
               )}
@@ -634,6 +834,7 @@ export function ChatSidebar({
                                 onRenameCommit={commitRename}
                                 onRenameCancel={cancelRename}
                                 recentActions={rowActionsFor(c)}
+                                {...chatItemExtras(c)}
                               />
                             ))}
                           </div>
@@ -669,6 +870,7 @@ export function ChatSidebar({
                         onRenameCommit={commitRename}
                         onRenameCancel={cancelRename}
                         recentActions={rowActionsFor(c)}
+                        {...chatItemExtras(c)}
                       />
                     ))}
                   </div>
@@ -698,10 +900,61 @@ export function ChatSidebar({
                         onRenameCommit={commitRename}
                         onRenameCancel={cancelRename}
                         recentActions={rowActionsFor(c)}
+                        {...chatItemExtras(c)}
                       />
                     ))}
                   </div>
                 </>
+              )}
+
+              {selectionMode && (
+                <div
+                  className="pointer-events-none absolute inset-x-1 bottom-1 z-20 pt-6"
+                  role="region"
+                  aria-label={t('sidebar.selectionBar')}
+                >
+                  <div className="pointer-events-auto sidebar-selection-dock flex flex-col gap-1.5 rounded-xl border border-primary/20 bg-background/92 p-2 shadow-lg backdrop-blur-md">
+                    <div className="flex items-center gap-2">
+                      <p className="min-w-0 flex-1 truncate text-xs font-medium text-foreground">
+                        {t('sidebar.selectedCount', { count: selectedCount })}
+                      </p>
+                      {visibleSelectableIds.length > selectedCount ? (
+                        <button
+                          type="button"
+                          className="shrink-0 rounded-md px-2 py-1 text-[11px] font-medium text-primary hover:bg-primary/10"
+                          onClick={selectAllVisible}
+                        >
+                          {t('sidebar.selectAllVisible')}
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                        aria-label={t('sidebar.exitSelection')}
+                        onClick={exitSelectionMode}
+                      >
+                        <X className="h-4 w-4" aria-hidden />
+                      </button>
+                    </div>
+                    <p className="px-0.5 text-[10px] leading-snug text-muted-foreground">
+                      {t('sidebar.selectionHint')}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="h-9 w-full gap-2"
+                      disabled={selectedCount === 0}
+                      onClick={() => {
+                        if (selectedCount === 0) return;
+                        onDeleteMany([...selectedIds]);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4" aria-hidden />
+                      {t('sidebar.deleteSelected', { count: selectedCount })}
+                    </Button>
+                  </div>
+                </div>
               )}
             </SidebarNavCard>
 

@@ -55,7 +55,7 @@ export function ChatPage() {
   const [draft, setDraft] = useState('');
   const [composerFiles, setComposerFiles] = useState<File[]>([]);
   const [regenerateConfirmOpen, setRegenerateConfirmOpen] = useState(false);
-  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [deleteTargetIds, setDeleteTargetIds] = useState<string[] | null>(null);
   const [understoodOpen, setUnderstoodOpen] = useState(false);
   const [promptBaseline, setPromptBaseline] = useState('');
   const setMobileSidebarOpen = useUiStore((s) => s.setMobileSidebarOpen);
@@ -251,7 +251,8 @@ export function ChatPage() {
           else void ports.conversations.create(user.id);
         }}
         onSelect={(id) => setActive(user.id, id)}
-        onDeleteRecent={(id) => setDeleteTargetId(id)}
+        onDeleteRecent={(id) => setDeleteTargetIds([id])}
+        onDeleteMany={(ids) => setDeleteTargetIds(ids)}
         onPinRecent={(id) => {
           if (appConfig.useMock) togglePin(user.id, id);
           else void ports.conversations.togglePin(user.id, id);
@@ -619,18 +620,27 @@ export function ChatPage() {
         onCancel={() => setRegenerateConfirmOpen(false)}
       />
       <ConfirmModal
-        open={Boolean(deleteTargetId)}
-        message={t('chat.deleteChatConfirm')}
+        open={Boolean(deleteTargetIds?.length)}
+        message={
+          deleteTargetIds?.length === 1
+            ? t('chat.deleteChatConfirm')
+            : t('chat.deleteChatsConfirm', { count: deleteTargetIds?.length ?? 0 })
+        }
         confirmLabel={t('sidebar.deleteChat')}
         cancelLabel={t('chat.cancel')}
         onConfirm={() => {
-          if (deleteTargetId) {
-            if (appConfig.useMock) deleteConversation(user.id, deleteTargetId);
-            else void ports.conversations.delete(user.id, deleteTargetId);
+          if (deleteTargetIds?.length) {
+            if (appConfig.useMock) {
+              for (const id of deleteTargetIds) deleteConversation(user.id, id);
+            } else {
+              void Promise.all(
+                deleteTargetIds.map((id) => ports.conversations.delete(user.id, id)),
+              );
+            }
           }
-          setDeleteTargetId(null);
+          setDeleteTargetIds(null);
         }}
-        onCancel={() => setDeleteTargetId(null)}
+        onCancel={() => setDeleteTargetIds(null)}
       />
     </div>
   );
