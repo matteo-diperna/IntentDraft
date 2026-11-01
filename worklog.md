@@ -1,6 +1,6 @@
 # Worklog — IntentDraft (PromptPilot)
 
-**Ultimo aggiornamento:** 2026-10-31  
+**Ultimo aggiornamento:** 2026-11-01  
 **Scopo:** sequenza operativa per riprendere lo sviluppo full-stack da dove ci siamo fermati.
 
 ---
@@ -204,7 +204,7 @@ Spunta ogni voce solo quando verificata (build ok + prova manuale o test indicat
 
 ## Dove riprendere **adesso**
 
-**Prossima azione consigliata:** test manuali B9–B10 (§ sotto), oppure **Blocco 11 (INF deploy)** quando pronto. LLM Claude: più tardi (`LLM_ENABLED=true` + chiave).
+**Prossima azione consigliata:** completare le **verifiche manuali in API mode** (checkbox § Blocchi 2–8) e la checklist §18 in [`frontend-implementation-spec.md`](docs/product/planning/frontend-implementation-spec.md); poi avviare la **fase test** (EV + rubric, § analisi gap in fondo a questo file). **Blocco 11 (INF deploy)** resta rinviato.
 
 Dopo ogni blocco: `npm run build` in `backend/`, commit atomico, aggiornare le checkbox in questo file.
 
@@ -357,3 +357,260 @@ Prerequisiti: API mode; `LLM_ENABLED=true` e chiave Anthropic valida in `backend
 - **B8-M02 — Login Google (AUTH-06):** Con credenziali ok, login Google → sessione cookie → `/app`, `authProvider: google`, `hasPassword: false` in Settings.
 
 - **B8-M03 — Errore OAuth (AUTH-07):** Simula callback invalido o annulla su Google → redirect `/#/login?oauth=error`.
+
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Analisi gap — verso la primissima versione testabile (2026-11-01)
+
+Questa sezione sintetizza **tutto ciò che manca** (software, verifica, qualità, documentazione) per passare da “codice implementato” a **prodotto locale funzionante e pronto alla fase di test** (pilota interno / 5–10 utenti), incrociando questo worklog, [`docs/product/requirements/product-requirements.md`](docs/product/requirements/product-requirements.md), [`docs/product/planning/beta-roadmap.md`](docs/product/planning/beta-roadmap.md), [`docs/product/quality/testing-and-evaluation.md`](docs/product/quality/testing-and-evaluation.md) e [`docs/product/planning/frontend-implementation-spec.md`](docs/product/planning/frontend-implementation-spec.md) §18.
+
+**Nota di lettura:** gran parte dei blocchi B0–B10 e admin A1–A10 è **già implementata in repo**; le checkbox ancora `[ ]` nel worklog indicano soprattutto **prove manuali non ancora eseguite o non documentate**, non necessariamente lavoro di coding mancante. La [`beta-roadmap.md`](docs/product/planning/beta-roadmap.md) e parti del [`backend-implementation-plan.md`](docs/product/planning/backend-implementation-plan.md) restano **indietro rispetto al codice** (MySQL vs Supabase, FOUND/BETA non spuntati) — vedi §F sotto.
+
+### Sintesi esecutiva
+
+| Area | Stato codice | Cosa manca davvero |
+| ---- | ------------ | ------------------- |
+| **Frontend UI** | Completo (mock + adapter API, admin, bulk delete chat, screenshot in docs) | Passare checklist §18; responsive/a11y spot-check |
+| **Backend API** | Auth, CRUD, file, orchestrator mock/LLM, admin, rate limit, CI | Verifiche manuali + LLM con chiave reale; admin §8 manuale |
+| **Test automatici** | Unit/integration BE, smoke Playwright mock + `smoke-api` opzionale | Gate **G1**: T-E2E-01…05 non tutti in CI; cartella **`tests/fixtures/eval/` assente** |
+| **Deploy cloud (M6 / INF)** | Non implementato | **Fuori scope** per la primissima versione test locale/team |
+| **Routing multi-LLM (R2–R5)** | Solo Claude + mock | **Fuori scope** pre-pilota; documentato in [`llm-routing-strategy.md`](docs/product/ai/llm-routing-strategy.md) |
+
+**Definition of Done “pronta fase test” (locale):** stack avviabile con PM2 o `dev:all`, `VITE_USE_MOCK=false`, Supabase collegato, tutte le verifiche manuali B3–B9 e §18 FE spuntate, `npm run ci` verde, almeno una passata B9 con `LLM_ENABLED=true`, smoke-api Playwright eseguito almeno una volta, gate **G4** (no secret nel bundle) e **G5** (pagina Limiti/privacy coerente con API reale) verificati, dataset EV-01/EV-02 pronti per rubric umana.
+
+---
+
+### A. Implementazione software — già presente (non rifare)
+
+Riferimento rapido per non duplicare lavoro:
+
+- **Auth:** register/login/logout/me, cookie `idt_sess`, forgot/reset password (route + pagine FE).
+- **Conversazioni:** CRUD, metadata pin/progetto, titolo auto, isolamento `user_id`.
+- **Messaggi + AI:** orchestrator server (`mockEngine` + `llmEngine` con ANALYZE/GENERATE), regenerate/skip, refusal medico/legal, `ai_state`, `idt_prmt` versionati.
+- **File:** multipart upload, download con cookie, allowlist MIME, test integrazione.
+- **Profilo:** PATCH utente, cambio password, Settings FE.
+- **Google OAuth:** route BE + UI (richiede env Google per test reali).
+- **Admin:** `/api/admin/*`, console `/app/admin`, usage LLM (`idt_usag`), template prompt piattaforma, audit, legal/cookie API.
+- **Hardening:** rate limit auth/messaggi, GitHub Actions CI, runbook rotazione segreti.
+- **Frontend:** i18n IT/EN, tema chiaro/scuro, HashRouter, anteprima PDF, selezione multipla ed eliminazione bulk chat.
+
+---
+
+### B. Blocco critico — verifiche manuali end-to-end (API mode)
+
+Prerequisiti comuni per ogni sessione di test:
+
+1. `backend/.env`: `DATABASE_URL`, `SESSION_SECRET`, `CORS_ORIGIN=http://localhost:5173`; opzionale `LLM_ENABLED` + `ANTHROPIC_API_KEY`.
+2. `frontend/.env`: `VITE_USE_MOCK=false`, `VITE_API_URL=http://localhost:3001`.
+3. Migrazioni admin applicate se DB vecchio: `cd backend && npx prisma migrate deploy` (vedi `backend/README.md`).
+4. Avvio: `npm run pm2:start` dalla root **oppure** `npm run dev:all` — **non** mescolare porte occupate. Se PM2 è vuoto (`pm2 list` senza processi), usare **`npm run pm2:start`** prima di `pm2 restart intentdraft`.
+
+#### B.1 Checkbox worklog ancora aperte (priorità P0)
+
+| ID worklog | Attività | Riferimento dettaglio |
+| ---------- | -------- | --------------------- |
+| 12 | Verifica FE auth IF-01…03 | Registrazione, login, logout, F5 su `/app` |
+| 18 | Verifica FE conversazioni | B3-M01 … B3-M08 (§ sopra) |
+| 21 | Verifica FE messaggi | B4-M01 … B4-M06 — oggi atteso flusso **M4/M5**, non stub B4 |
+| 25 | Verifica FE file | B5-M01 … B5-M07 |
+| 29 | Verifica FE Settings | B6-M01 … B6-M07 |
+| 35 | Test manuali chat M4 | B7-M01 … B7-M05 + `smoke-api.spec.ts` |
+| 38 | Google OAuth | B8-M01 … B8-M03 (AUTH-06/07) — richiede Google Cloud Console |
+
+#### B.2 Checklist §18 frontend (non tracciata nel worklog — P0)
+
+In [`frontend-implementation-spec.md`](docs/product/planning/frontend-implementation-spec.md) §18 restano **tutte** le voci PRE, PUB, AUTH, SET, SH, CHAT, FILE, A11Y, I18N, VIS, BE non spuntate. Vanno eseguite **due volte** se possibile:
+
+- una passata con **`VITE_USE_MOCK=true`** (regression UI rapida);
+- una passata con **`VITE_USE_MOCK=false`** (BE-01 … BE-05).
+
+Ordine suggerito: **PRE → PUB → AUTH → SET → SH → CHAT → FILE → BE** (API mode), poi A11Y/I18N/VIS.
+
+#### B.3 Admin console — verifica manuale (P1)
+
+[`admin-capabilities-plan.md`](docs/product/planning/admin-capabilities-plan.md) §13: unica voce ancora `[ ]` — **Verifica manuale con account §8** (login `DEV_ADMIN_*`, navigazione tab Dashboard/Utenti/Uso API/Prompt/Piattaforma, export usage se presente, nessun accesso admin con utente `user`).
+
+#### B.4 LLM Anthropic in condizioni reali (P0 per pilota “Must”)
+
+Con `LLM_ENABLED=true` e chiave valida, eseguire **B9-M01 … B9-M07** (§ sopra). Senza questa passata, il pilota rischia di testare solo il mock server-side.
+
+#### B.5 Hardening — conferma operativa (P1)
+
+B10-M01 … B10-M05: rate limit e CI GitHub — verificare almeno una volta su branch/PR e in locale `npm run ci`.
+
+---
+
+### C. Test automatici e gap rispetto ai gate qualità
+
+Fonte: [`testing-and-evaluation.md`](docs/product/quality/testing-and-evaluation.md).
+
+#### C.1 Gate G1 — E2E Must in CI (gap principale)
+
+| Test | Stato attuale | Azione |
+| ---- | ------------- | ------ |
+| **T-E2E-01** | Coperto parzialmente da smoke mock / smoke-api | Estendere Playwright: interpretazione visibile dopo invio |
+| **T-E2E-02** | Non dedicato | Scenario LinkedIn / 2 turni chiarimenti in `e2e/` |
+| **T-E2E-03** | **`smoke-api.spec.ts`** copia clipboard | Aggiungere a CI con servizio Postgres + backend (oggi spesso skip se BE down) |
+| **T-E2E-04** | Non automatizzato | Test rigenera prompt |
+| **T-E2E-05** | Non automatizzato | Nuova conversazione resetta thread |
+
+File E2E esistenti: `frontend/e2e/smoke.spec.ts`, `smoke-api.spec.ts`, `responsive.spec.ts`, `admin.spec.ts`. **Manca** un job CI che avvii backend + DB e lanci `smoke-api` in modo deterministico (oggi CI root fa build FE + test unit, non full stack E2E API).
+
+#### C.2 Dataset valutazione EV-* (P0 per fase test qualità, non per “funziona”)
+
+- Cartella **`tests/fixtures/eval/`** (o `backend/tests/fixtures/eval/`) **non esiste** — roadmap BETA-083.
+- Creare almeno **EV-01** (appunti) e **EV-02** (post LinkedIn) come JSON/markdown con input utente + criteri rubric attesi.
+- EV-03 … EV-15 possono seguire durante il pilota.
+
+#### C.3 Gate G2, G3 — valutazione umana (fase test vera)
+
+- **G2:** ≥80% casi EV pass rubric (§5 testing doc) — richiede **2 revisori** e sessioni dedicate, non solo sviluppo.
+- **G3:** confronto baseline vs prompt IntentDraft (§6) — stesso modello downstream, ordine randomizzato.
+- **BETA-084 / BETA-085** in beta-roadmap: ancora da pianificare.
+
+#### C.4 Test T-ERR / T-SEC in automazione
+
+- **T-SEC-01** (refusal): coperto in unit/integration BE; verificare anche **CHAT-08** manuale.
+- **T-ERR-01** (503 LLM): prova manuale B9-M06; UI `error_recoverable` — verificare copy e retry.
+- **T-SEC-02** (no API key in bundle): `grep`/audit build `frontend/dist` — gate **G4**.
+
+---
+
+### D. Gap software minori (coding) — opzionali pre-pilota, utili pre-go-live
+
+Non bloccano un test interno se le verifiche manuali passano, ma compaiono in spec/UX come incomplete:
+
+| Gap | Fonte | Impatto | Priorità |
+| --- | ----- | ------- | -------- |
+| Stato UI **`error_fatal`** | UX doc + FE spec §6.6 | Config server assente (es. LLM richiesto ma disabilitato) — messaggio admin beta | P2 |
+| Sezione spec §2.2 “Assente o stub” | FE spec (obsoleta) | Confonde chi legge — **aggiornare doc**, non necessariamente codice | P2 doc |
+| **FR-018** progresso domande | Could | Nice-to-have | P3 |
+| **FR-019** export `.txt` file | Could / post-beta | Non richiesto per pilota | P3 |
+| **RoutingHints / multi-provider** R2–R5 | llm-routing-strategy | Evoluzione prodotto, non beta locale | Futuro |
+| Seed opzionale **B1-003** | worklog item 5 | Comodo per demo; esiste già `DEV_ADMIN_*` + seed | P3 |
+| Rate limit **per sessione** oltre IP | INF-004 / NFR-003 | Parziale oggi; rilevante solo con deploy pubblico | Post-INF |
+| Object storage upload (S3) | INF, cloud guide | Locale usa `UPLOAD_DIR` — OK per test | Post-INF |
+
+#### D.1 Requisiti Should da valutare in pilota
+
+- **FR-017** feedback utile/non utile — UI presente; verificare in API mode (B6-M05, CHAT-09).
+- **FR-020** etichette sezioni per tipo attività — dipende da qualità LLM/GENERATE; rubric in pilota.
+- **NFR-006 / NFR-007 / NFR-008** — responsive Playwright esiste; audit a11y manuale (A11Y-01/02) consigliato.
+
+---
+
+### E. Requisiti Must — matrice “implementato vs da validare”
+
+| Requisito | Implementazione attesa | Cosa manca per dichiararlo chiuso |
+| --------- | ---------------------- | --------------------------------- |
+| FR-001 … FR-015 | Orchestrator + UI stati | Checklist §18 CHAT + B7/B9 manuali |
+| FR-016 Limiti/privacy | `LimitsPage` + API legal admin | **G5:** testo allineato a stack reale (PostgreSQL/Supabase, invio dati a Anthropic se LLM on) — verificare copy i18n non obsoleta (“MySQL”, “solo browser”) |
+| FR-021 Auth | BE + FE | Item 12, AUTH-* §18 |
+| FR-022 Persistenza | BE + hydrate FE | B3-M*, BE-03 |
+| FR-023 Upload | BE + FE | B5-M*, FILE-* §18 |
+| FR-024 i18n | FE + locale utente in DB | I18N-* §18, B6-M02 |
+| NFR-001 | LLM server-side | T-SEC-02 audit bundle |
+| NFR-003 | Rate limit | B10-M01/M02 |
+| NFR-004 | Max chars | CHAT-11, B4-M04 |
+| NFR-005 | Log senza content | Review log BE con LLM on |
+
+---
+
+### F. Documentazione da riallineare (non blocca il test, evita errori di priorità)
+
+Aggiornare quando possibile (commit doc-only):
+
+| Documento | Problema | Azione |
+| --------- | -------- | ------ |
+| [`beta-roadmap.md`](docs/product/planning/beta-roadmap.md) | FOUND/BETA molti `[ ]` ma codice fatto | Aggiornare stato Fase 4–9 o aggiungere nota “implementato 2026-10/11” |
+| [`backend-implementation-plan.md`](docs/product/planning/backend-implementation-plan.md) | Checklist B3–B10 ancora `[ ]` | Spuntare o aggiungere tabella stato reale |
+| [`technical-architecture.md`](docs/product/architecture/technical-architecture.md) | “Repository greenfield”, MySQL | PostgreSQL/Supabase, orchestrator attivo |
+| [`product-requirements.md`](docs/product/requirements/product-requirements.md) | Riferimenti MySQL NFR-013 | Nota Supabase + ADR |
+| [`frontend-implementation-spec.md`](docs/product/planning/frontend-implementation-spec.md) §2.2 | Lista “Assente” obsoleta | Sostituire con “Completato” + rimandare gap reali (error_fatal, E2E CI) |
+| [`testing-and-evaluation.md`](docs/product/quality/testing-and-evaluation.md) | Path `tests/fixtures/eval/` | Creare cartella + README quando si popola EV |
+| [`product/README.md`](docs/product/README.md) | Già aggiornato 2026-11-01 | Mantenere sync con worklog |
+| Root [`README.md`](../README.md) | UI preview aggiunto | OK |
+
+Screenshot UI: [`docs/product/experience/screenshots/README.md`](docs/product/experience/screenshots/README.md).
+
+---
+
+### G. Esplicitamente fuori scope — “primissima versione test” locale
+
+Non serve completare questi punti per iniziare test con founder/team su localhost:
+
+- **Blocco 11 / M6 / INF-001 … INF-006** — Docker, staging cloud, CDN, WAF, multi-regione.
+- **BETA-100 … BETA-112** — pilota utenti esterni, Go/No-Go formale (dopo test interno).
+- **Multi-tenant team / workspace** — OQ, post-beta.
+- **Pagamenti** — OQ-007.
+- **Routing automatico multi-LLM** (Gemini/OpenAI) — R2–R5.
+- **ADR-002** Anthropic dedicato — nice doc, non blocca test.
+
+---
+
+### H. Sequenza consigliata (ordine operativo)
+
+1. **Ambiente stabile** — Supabase OK, migrate deploy, PM2 start, health `db: true`.
+2. **CI verde** — `npm run ci` in root; fix eventuali rossi.
+3. **Passata mock** — §18 PRE/PUB/AUTH rapid su `VITE_USE_MOCK=true`.
+4. **Passata API** — spuntare worklog 12, 18, 21, 25, 29, 35 + §18 BE/CHAT/FILE/SET/SH.
+5. **LLM reale** — B9-M01…M07 con chiave Anthropic; registrare costi/token in admin (tab Uso API).
+6. **OAuth** — B8 se serve test Google; altrimenti documentare “skipped”.
+7. **Admin** — verifica §8 admin plan con account dev admin.
+8. **Automazione** — far girare `npx playwright test e2e/smoke-api.spec.ts` con stack up; pianificare T-E2E-02/04/05.
+9. **Dataset EV** — creare EV-01, EV-02 in fixtures; prima sessione rubric (G2).
+10. **Triage** — bug P0 da AUTH/CHAT/FILE in API mode; solo dopo aprire pilota BETA-100+.
+
+---
+
+### I. Checklist riassuntiva — “pronta fase test” (spuntare)
+
+**Ambiente e build**
+
+- [ ] `GET /api/health` → `{ ok: true, db: true }`
+- [ ] Frontend API mode configurato e login reale ok
+- [ ] `npm run ci` verde su `main`
+- [ ] PM2 o script avvio documentato per chi testa
+
+**Funzionale Must (manuale)**
+
+- [ ] Worklog: voci 12, 18, 21, 25, 29, 35, 38 (se OAuth) completate
+- [ ] FE spec §18: almeno AUTH, SH, CHAT, FILE, BE in API mode
+- [ ] B9 con `LLM_ENABLED=true` almeno su scenari EV-01 ed EV-02
+- [ ] Admin: verifica manuale account §8
+- [ ] FR-016 / G5: pagina Limiti e privacy corretta per stack attuale
+- [ ] G4: nessuna chiave Anthropic/session secret nel bundle FE
+
+**Qualità pilota (fase test)**
+
+- [ ] `tests/fixtures/eval/` creato con EV-01, EV-02 (+ istruzioni rubric)
+- [ ] Prima sessione rubric 2 revisori su ≥2 casi
+- [ ] `smoke-api.spec.ts` eseguito con successo almeno una volta
+- [ ] Backlog P0 bug aperto = 0 prima di reclutare esterni
+
+**Dopo la fase test (non ora)**
+
+- [ ] INF cloud (M6)
+- [ ] E2E full stack in CI (G1 completo)
+- [ ] Pilota 5–10 utenti (BETA-100+)
+- [ ] Go/No-Go founder (BETA-110/111)
+
+---
+
+*Fine analisi gap — aggiornare questa sezione quando si chiudono le checkbox o si aprono nuovi P0 dal pilota.*
