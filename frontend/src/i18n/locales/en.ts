@@ -278,7 +278,7 @@ const en: TranslationSchema = {
   },
   limits: {
     title: 'Limits & privacy',
-    body: 'IntentDraft generates text (prompts) for use in an external LLM. It does not guarantee correctness. In this demo, data stays in the browser; with the backend, content will be stored on local MySQL.',
+    body: 'IntentDraft interprets your request and generates instructions (prompts) you can copy or refine. It does not guarantee correctness. With an account and the backend enabled, conversations and attachments are stored in PostgreSQL (Supabase). When server-side AI is enabled, text needed for analysis may be sent to Anthropic Claude per platform configuration — API keys never leave the server.',
   },
 };
 

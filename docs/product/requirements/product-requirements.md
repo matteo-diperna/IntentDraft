@@ -1,8 +1,8 @@
 # Requisiti di prodotto — IntentDraft (beta)
 
 **Documento:** `product-requirements.md`  
-**Versione:** 1.1  
-**Stato:** **Approvato dal founder** (2026-10-25) — aggiornato per auth, MySQL, upload, i18n  
+**Versione:** 1.2  
+**Stato:** **Approvato dal founder** (2026-10-25) — nota implementazione 2026-11-01: PostgreSQL (Supabase), backend B0–B10, LLM B9 — [`../decisions/implementation-amendments.md`](../decisions/implementation-amendments.md)  
 **Fonti:** [`../../concept/initial-brainstorming.md`](../../concept/initial-brainstorming.md), [`../discovery/repository-assessment.md`](../discovery/repository-assessment.md)
 
 ---
@@ -11,7 +11,7 @@
 
 IntentDraft è un assistente conversazionale per utenti **non esperti** di prompt engineering. L’utente descrive in linguaggio naturale cosa vuole ottenere; il sistema interpreta l’intento, chiede chiarimenti mirati quando servono, e produce un **prompt strutturato** da usare in un LLM esterno (copia/incolla).
 
-**Obiettivo beta:** produrre un **prompt testuale** di qualità (copiabile in un LLM esterno), con flusso conversazionale, **account**, **persistenza su MySQL** e **upload file**. Pagamenti ed hosting cloud **non** fanno parte di questa fase; integrazione **Anthropic Claude Sonnet** in **fase implementativa successiva** alle fondamenta FE/BE.
+**Obiettivo beta:** produrre un **prompt testuale** di qualità (copiabile in un LLM esterno), con flusso conversazionale, **account**, **persistenza server** (PostgreSQL/Supabase) e **upload file**. Il backend **orchestra** analisi e generazione via **Anthropic Claude** quando `LLM_ENABLED=true` (fallback mock). Pagamenti ed hosting cloud **non** fanno parte di questa fase pilota locale.
 
 ---
 
@@ -103,11 +103,11 @@ Non: “prompt più lunghi”. Sì: intento, vincoli, formato, verificabilità, 
 | ------------------------------- | ------------------ | ------------------------------------ |
 | Esecuzione prompt nel prodotto  | **Won't**          | OQ-008 — output = testo prompt       |
 | Account / login                 | **Must**           | OQ-010 — auth subito                 |
-| Persistenza conversazioni       | **Must**           | OQ-003 **C** — MySQL                 |
+| Persistenza conversazioni       | **Must**           | OQ-003 **C** — PostgreSQL (Supabase) |
 | Upload file                     | **Must**           | OQ-009 — beta                        |
 | Pagamenti                       | **Won't** (ora)    | OQ-007 — v1 ufficiale futura         |
 | Hosting cloud / deploy pubblico | **Won't** (ora)    | OQ-005 **A**, OQ-012 — localhost     |
-| Integrazione LLM Anthropic      | **Must** (roadmap) | OQ-002 — **dopo** fondamenta FE/BE   |
+| Integrazione LLM Anthropic      | **Must**           | OQ-002 — **implementato** (B9); flag `LLM_ENABLED` |
 | Scelta modello da UI            | **Could**          | Config server; Sonnet default futuro |
 | Template UI GitHub              | **Should**         | OQ-013 — scelta repo in corso        |
 | Multi-utente / team             | **Won't**          | Fase post-beta                       |
@@ -160,7 +160,7 @@ Non: “prompt più lunghi”. Sì: intento, vincoli, formato, verificabilità, 
 | **NFR-008** | Accessibilità: navigazione tastiera, contrasto, label form (WCAG 2.1 AA come target).    | Should | BETA-075         |
 | **NFR-009** | UI **IT + EN**; prompt generati in lingua coerente con preferenza utente (default IT).   | Must   | FOUND-015        |
 | **NFR-012** | Password hash sicuro (bcrypt/argon2); nessuna password in chiaro in DB o log.            | Must   | FOUND-010        |
-| **NFR-013** | MySQL locale documentato; migrazioni versionate.                                         | Must   | FOUND-020–022    |
+| **NFR-013** | PostgreSQL documentato; migrazioni Prisma versionate (`backend/prisma/migrations/`).      | Must   | B1, FOUND-012    |
 | **NFR-010** | Costo inferenza monitorato (metriche per sessione).                                      | Should | BETA-060         |
 | **NFR-011** | Disponibilità target beta: best-effort; nessun SLA formale.                              | Could  |                  |
 
@@ -221,7 +221,7 @@ Non: “prompt più lunghi”. Sì: intento, vincoli, formato, verificabilità, 
 ## 13. Assunzioni
 
 - Output prodotto = **testo prompt** (OQ-008 **Accepted**); esecuzione solo in LLM esterno.
-- **MySQL** su localhost; nessun hosting produzione in questa fase (OQ-012 **Deferred**).
+- **PostgreSQL (Supabase)** in sviluppo; API e frontend in localhost; nessun hosting produzione pubblico in questa fase (OQ-012 **Deferred**). Validazione Must = **verifiche manuali + test** — [`../../../worklog.md`](../../../worklog.md).
 - Provider LLM: **Anthropic Claude Sonnet** (OQ-002); codice integrato **dopo** auth/DB/upload.
 - Pilota qualità su casi **semplici**: note / post LinkedIn (founder 2026-10-25).
 - Template visivo da repo GitHub esterna (OQ-013 **Open**).

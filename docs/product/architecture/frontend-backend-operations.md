@@ -1,9 +1,10 @@
 # Operazioni frontend ↔ backend — IntentDraft
 
 **Documento:** `frontend-backend-operations.md`  
-**Versione:** 1.0  
-**Stack:** Vite React (template) ↔ **Node API** + **Prisma** + MySQL (CORS + credentials)  
-**Fase corrente:** **fondamenta locali** — auth, DB, upload, CRUD conversazioni; **LLM Claude Sonnet in fase successiva**
+**Versione:** 1.1  
+**Aggiornato:** 2026-11-01  
+**Stack:** Vite React ↔ **Fastify** Node API + **Prisma** + **PostgreSQL (Supabase)** (CORS + credentials)  
+**Stato:** operazioni **implementate** in repo; validazione pilota = test manuali [`../../../worklog.md`](../../../worklog.md)
 
 ---
 
@@ -11,148 +12,122 @@
 
 | Layer                        | Responsabilità                                                                      |
 | ---------------------------- | ----------------------------------------------------------------------------------- |
-| **Frontend**                 | Pagine, form, i18n IT/EN, chiamate API autenticate, UI chat (stub fino a motore AI) |
-| **Backend (Route Handlers)** | Validazione, auth, accesso MySQL, storage file locale, (futuro) proxy Anthropic     |
-| **MySQL**                    | Persistenza utenti, sessioni, conversazioni, messaggi, metadati file, prompt        |
+| **Frontend**                 | Pagine, form, i18n IT/EN, adapter mock/API, UI chat, admin (ruolo admin)            |
+| **Backend**                  | Validazione, auth, PostgreSQL, storage file locale, orchestrator LLM/mock, admin API |
+| **PostgreSQL**               | Utenti, sessioni, conversazioni, messaggi, file meta, prompt, usage LLM, admin    |
 
-**Output prodotto:** testo prompt (`idt_prmt.body_markdown`) — nessuna esecuzione LLM nel prodotto (OQ-008 **Accepted**).  
+**Output prodotto:** testo prompt (`idt_prmt.body_markdown`) — nessuna esecuzione autonoma del task utente in-app (OQ-008 **Accepted**). Il server **invoca** Claude (o mock) per interpretazione e composizione.  
 **Tabelle DB:** nomi fisici a 8 caratteri — vedi [`database-design.md`](database-design.md) §2.1.
 
 ---
 
 ## 2. Autenticazione
 
-Meccanismo target: **cookie di sessione httpOnly** dopo login; middleware Next.js verifica sessione su route protette.
+Meccanismo: **cookie di sessione httpOnly**; `ProtectedRoute` + bootstrap `GET /api/auth/me`.
 
-| #      | Operazione                   | FE                        | BE                                                  | DB                                | Priorità fase iniziale |
-| ------ | ---------------------------- | ------------------------- | --------------------------------------------------- | --------------------------------- | ---------------------- |
-| OP-A01 | Registrazione email/password | Form + validazione client | `POST /api/auth/register` hash password, crea user  | INSERT `idt_user`                    | **P0**                 |
-| OP-A02 | Login                        | Form                      | `POST /api/auth/login` verifica hash, crea sessione | SELECT `idt_user`, INSERT `idt_sess` | **P0**                 |
-| OP-A03 | Logout                       | Pulsante                  | `POST /api/auth/logout` invalida sessione           | DELETE `idt_sess`                 | **P0**                 |
-| OP-A04 | Sessione corrente            | Bootstrap app / layout    | `GET /api/auth/me`                                  | SELECT user by session            | **P0**                 |
-| OP-A05 | Cambio lingua UI             | Selector IT/EN            | `PATCH /api/users/me` `{ locale }`                  | UPDATE `idt_user.locale`             | **P1**                 |
+| #      | Operazione                   | FE                        | BE                                                  | DB                                | Stato |
+| ------ | ---------------------------- | ------------------------- | --------------------------------------------------- | --------------------------------- | ----- |
+| OP-A01 | Registrazione email/password | Form + validazione client | `POST /api/auth/register`                           | INSERT `idt_user`                 | ✅    |
+| OP-A02 | Login                        | Form                      | `POST /api/auth/login`                              | INSERT `idt_sess`                 | ✅    |
+| OP-A03 | Logout                       | Pulsante                  | `POST /api/auth/logout`                             | DELETE `idt_sess`                 | ✅    |
+| OP-A04 | Sessione corrente            | Bootstrap app             | `GET /api/auth/me`                                  | SELECT user by session            | ✅    |
+| OP-A05 | Cambio lingua UI             | Settings / menu           | `PATCH /api/users/me` `{ locale }`                  | UPDATE `idt_user.locale`          | ✅    |
+| OP-A06 | Google OAuth                 | Login popup/redirect      | `GET /api/auth/google`, callback                    | user `authProvider: google`       | ✅ (env) |
+| OP-A07 | Forgot / reset password      | Pagine dedicate           | `POST /api/auth/forgot-password`, reset token       | email + hash                      | ✅    |
 
-**Collaborazione FE↔BE:** ogni OP-A01–A04 richiede entrambi; FE non accede a MySQL; BE restituisce errori strutturati `{ code, message }` traducibili lato FE.
+**Collaborazione FE↔BE:** FE non accede al DB; errori `{ code, message }` mappati in i18n.
 
 ---
 
-## 3. Conversazioni e messaggi (senza LLM — stub)
+## 3. Conversazioni e messaggi (orchestrator)
 
-Finché Claude non è integrato, `POST .../messages` può persistere il messaggio user e rispondere con placeholder assistant (“Motore AI non ancora collegato”) **oppure** eco di test — utile per testare persistenza.
+`POST .../messages` persiste il messaggio user e invoca l’**orchestrator** (mock engine o Anthropic ANALYZE/GENERATE).
 
-| #      | Operazione             | FE               | BE                                     | DB                  | Priorità |
-| ------ | ---------------------- | ---------------- | -------------------------------------- | ------------------- | -------- |
-| OP-C01 | Lista conversazioni    | Sidebar / home   | `GET /api/conversations`               | SELECT by `user_id` | **P0**   |
-| OP-C02 | Nuova conversazione    | Pulsante “Nuova” | `POST /api/conversations`              | INSERT              | **P0**   |
-| OP-C03 | Dettaglio + messaggi   | Pagina chat      | `GET /api/conversations/:id`           | SELECT messages     | **P0**   |
-| OP-C04 | Invio messaggio user   | Composer         | `POST /api/conversations/:id/messages` | INSERT `idt_msgs`   | **P0**   |
-| OP-C05 | Archivia conversazione | Menu             | `PATCH /api/conversations/:id`         | UPDATE status       | **P2**   |
-
-**Futuro (motore AI — fase tardiva):** stessa `OP-C04` invocherà orchestrator → Anthropic → INSERT message assistant + `idt_prmt`.
+| #      | Operazione             | FE               | BE                                     | DB                  | Stato |
+| ------ | ---------------------- | ---------------- | -------------------------------------- | ------------------- | ----- |
+| OP-C01 | Lista conversazioni    | Sidebar          | `GET /api/conversations`               | SELECT by `user_id` | ✅    |
+| OP-C02 | Nuova conversazione    | Pulsante “Nuova” | `POST /api/conversations`              | INSERT              | ✅    |
+| OP-C03 | Dettaglio + messaggi   | Chat             | `GET /api/conversations/:id`           | messages, ai_state  | ✅    |
+| OP-C04 | Invio messaggio user   | Composer         | `POST /api/conversations/:id/messages` | INSERT + orchestrator | ✅  |
+| OP-C05 | Patch titolo/metadata  | Sidebar menu     | `PATCH /api/conversations/:id`         | pin, project, title | ✅    |
+| OP-C06 | Elimina conversazione  | Modale           | `DELETE /api/conversations/:id`        | CASCADE             | ✅    |
+| OP-C07 | Rigenera prompt        | UI chat          | `POST .../regenerate`                  | nuova `idt_prmt`    | ✅    |
+| OP-C08 | Salta chiarimenti      | UI chat          | `POST .../skip-clarification`          | orchestrator        | ✅    |
 
 ---
 
 ## 4. Prompt (output testuale)
 
-| #      | Operazione                    | FE              | BE                                                     | DB                        | Priorità         |
-| ------ | ----------------------------- | --------------- | ------------------------------------------------------ | ------------------------- | ---------------- |
-| OP-P01 | Visualizza ultimo prompt      | Pannello editor | Incluso in GET conversation o `GET .../prompts/latest` | SELECT `idt_prmt` | **P1** (dopo AI) |
-| OP-P02 | Salva modifica manuale prompt | Editor          | `PUT /api/prompts/:id`                                 | UPDATE body               | **P1**           |
-| OP-P03 | Rigenera prompt               | Pulsante        | `POST /api/conversations/:id/regenerate`               | INSERT nuova versione     | **Fase AI**      |
-| OP-P04 | Copia negli appunti           | Solo FE         | —                                                      | —                         | **P1** (FR-010)  |
+| #      | Operazione                    | FE              | BE                                                     | Stato |
+| ------ | ----------------------------- | --------------- | ------------------------------------------------------ | ----- |
+| OP-P01 | Visualizza ultimo prompt      | Editor          | GET conversation / `.../prompts/latest`                | ✅    |
+| OP-P02 | Salva modifica manuale prompt | Editor debounce | `PUT /api/prompts/:id`                                 | ✅    |
+| OP-P03 | Rigenera prompt               | Pulsante        | `POST .../regenerate`                                  | ✅    |
+| OP-P04 | Copia negli appunti           | Solo FE         | —                                                      | ✅    |
+| OP-P05 | Feedback utile/non utile      | Thumb           | `POST /api/prompts/:id/feedback`                       | ✅    |
 
 ---
 
 ## 5. Upload file
 
-| #      | Operazione                   | FE                    | BE                                            | DB / FS                                | Priorità |
-| ------ | ---------------------------- | --------------------- | --------------------------------------------- | -------------------------------------- | -------- |
-| OP-F01 | Upload file in conversazione | Input file + progress | `POST /api/conversations/:id/files` multipart | INSERT `idt_file` + scrivi disco | **P0**   |
-| OP-F02 | Lista file conversazione     | Lista allegati        | `GET /api/conversations/:id/files`            | SELECT                                 | **P0**   |
-| OP-F03 | Elimina file                 | Icona delete          | `DELETE /api/files/:id`                       | DELETE + rimuovi file FS               | **P1**   |
-| OP-F04 | Download file                | Link                  | `GET /api/files/:id/download`                 | Stream FS, check ownership             | **P1**   |
-
-**Validazione BE:** MIME allowlist, max size, nome sanitizzato, `user_id` = owner.
-
-**Uso nel prompt (fase AI):** BE legge estratto testo (pdf/docx parser **Could** post-MVP) o passa solo riferimento nel contesto — da specificare in `ai-prompt-engine-design.md` v1.1.
+| #      | Operazione                   | BE / FS                                       | Stato |
+| ------ | ---------------------------- | --------------------------------------------- | ----- |
+| OP-F01 | Upload multipart             | `POST /api/conversations/:id/files`           | ✅    |
+| OP-F02 | Lista file                   | `GET /api/conversations/:id/files`            | ✅    |
+| OP-F03 | Elimina file                 | `DELETE /api/files/:id`                       | ✅    |
+| OP-F04 | Download file                | `GET /api/files/:id/download` (cookie)        | ✅    |
 
 ---
 
-## 6. Health e config locale
+## 6. Admin (ruolo `admin`)
 
-| #      | Operazione        | FE  | BE                | Note                         |
-| ------ | ----------------- | --- | ----------------- | ---------------------------- |
-| OP-H01 | Health check      | —   | `GET /api/health` | DB ping                      |
-| OP-H02 | Feature flags dev | —   | env               | `LLM_ENABLED=false` iniziale |
+Operazioni `/api/admin/*` — metriche, utenti, usage LLM, template prompt, legal/cookie. Vedi [`../planning/admin-capabilities-plan.md`](../planning/admin-capabilities-plan.md).
 
 ---
 
-## 7. Sequenza tipica — utente autenticato (fase fondamenta)
+## 7. Health e config
+
+| #      | Operazione        | BE                | Note                         |
+| ------ | ----------------- | ----------------- | ---------------------------- |
+| OP-H01 | Health check      | `GET /api/health` | `{ ok, db }`                 |
+| OP-H02 | LLM               | env               | `LLM_ENABLED`, `ANTHROPIC_*` |
+
+---
+
+## 8. Sequenza tipica — utente autenticato (API mode)
 
 ```mermaid
 sequenceDiagram
   participant U as Browser
-  participant FE as Next.js UI
-  participant API as Route Handlers
-  participant DB as MySQL
+  participant FE as Vite SPA
+  participant API as Fastify
+  participant DB as PostgreSQL
   participant FS as Filesystem
+  participant LLM as Anthropic optional
 
   U->>FE: Login
   FE->>API: POST /api/auth/login
-  API->>DB: verify user + session
+  API->>DB: session
   API-->>FE: Set-Cookie
   FE->>API: POST /api/conversations
-  API->>DB: INSERT conversation
-  U->>FE: Upload file
-  FE->>API: POST .../files multipart
-  API->>FS: write file
-  API->>DB: INSERT idt_file
   U->>FE: Send message
   FE->>API: POST .../messages
-  API->>DB: INSERT message user
-  API-->>FE: stub assistant (pre-LLM)
+  API->>DB: INSERT user msg
+  API->>LLM: ANALYZE/GENERATE if enabled
+  API->>DB: assistant msg + idt_prmt
+  API-->>FE: phase, prompt, interpretation
 ```
 
 ---
 
-## 8. Template UI GitHub
+## 9. Tracciabilità roadmap
 
-**Decisione founder:** stile da template/repo esterna — **OQ-013 Deferred**.
+| Blocco doc storico | Stato repo |
+| ------------------ | ---------- |
+| FOUND-013–014 auth | ✅         |
+| FOUND-020–021 chat | ✅         |
+| FOUND-035 file     | ✅         |
+| BETA-050+ chat UX  | ✅ (mock + API) |
+| BETA-060+ LLM      | ✅ (B9)    |
 
-| Task      | Descrizione                                       |
-| --------- | ------------------------------------------------- |
-| FOUND-040 | Selezionare template (link repo)                  |
-| FOUND-041 | Integrare layout (header, auth pages, shell chat) |
-
-Fino ad allora: UI minimale funzionale (shadcn/Tailwind default).
-
----
-
-## 9. Errori API (contratto comune)
-
-```json
-{
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Human readable",
-    "details": {}
-  }
-}
-```
-
-Codici minimi: `UNAUTHORIZED`, `FORBIDDEN`, `NOT_FOUND`, `VALIDATION_ERROR`, `RATE_LIMITED`, `INTERNAL_ERROR`.
-
----
-
-## 10. Tracciabilità roadmap
-
-| Blocco             | Task                     |
-| ------------------ | ------------------------ |
-| Auth               | FOUND-010 … FOUND-014    |
-| DB schema          | FOUND-020 … FOUND-022    |
-| Conversazioni stub | FOUND-030 … FOUND-034    |
-| Upload             | FOUND-035 … FOUND-038    |
-| i18n               | FOUND-015                |
-| LLM Anthropic      | BETA-060+ (fase tardiva) |
-
-Vedi [`../planning/beta-roadmap.md`](../planning/beta-roadmap.md).
+Prossimo passo operativo: verifiche manuali — [`../../../worklog.md`](../../../worklog.md) § analisi gap.

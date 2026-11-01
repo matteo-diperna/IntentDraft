@@ -1,10 +1,11 @@
 # Roadmap frontend — IntentDraft (fase 1)
 
 **Documento:** `frontend-roadmap.md`  
-**Versione:** 1.2  
-**Scope:** solo UI in `frontend/` — **mock API** (localStorage + motore demo); **backend in fase 2** (Node, Prisma, MySQL, delete/rename/pin via API).  
+**Versione:** 1.3  
+**Aggiornato:** 2026-11-01  
+**Scope:** UI in `frontend/` con **adapter mock + API** (`VITE_USE_MOCK`); backend integrato (PostgreSQL/Supabase).  
 **Template base:** [react-typescript-template](https://github.com/luismalamoc/react-typescript-template)  
-**Stato fase 1:** mock + **rifacimento UX chat/sidebar/brand** (2026-10-25) — **verifica umana pending**
+**Stato:** implementazione FE **completa**; **verifica umana §18** e pilota — [`../../../worklog.md`](../../../worklog.md)
 
 **Legenda:** `[X]` completato · `[~]` completato ma sostituito/semplificato · `[ ]` da fare
 

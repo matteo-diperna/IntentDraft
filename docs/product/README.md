@@ -32,7 +32,7 @@ Indice della specifica beta. Concept sorgente: [`../concept/initial-brainstormin
 | Doc                                   | Path                                                                                         |
 | ------------------------------------- | -------------------------------------------------------------------------------------------- |
 | Architettura FE/BE, fasi              | [`architecture/technical-architecture.md`](architecture/technical-architecture.md)           |
-| Schema MySQL / ER                     | [`architecture/database-design.md`](architecture/database-design.md)                         |
+| Schema PostgreSQL / ER                | [`architecture/database-design.md`](architecture/database-design.md)                         |
 | Operazioni API e collaborazione FE/BE | [`architecture/frontend-backend-operations.md`](architecture/frontend-backend-operations.md) |
 | Deploy cloud (guida operativa)        | [`architecture/cloud-deployment-guide.md`](architecture/cloud-deployment-guide.md)           |
 
@@ -48,6 +48,7 @@ Indice della specifica beta. Concept sorgente: [`../concept/initial-brainstormin
 | Doc                         | Path                                                                                     |
 | --------------------------- | ---------------------------------------------------------------------------------------- |
 | Registro decisioni OQ-*     | [`decisions/open-questions-and-decisions.md`](decisions/open-questions-and-decisions.md) |
+| Emendamenti implementativi  | [`decisions/implementation-amendments.md`](decisions/implementation-amendments.md)     |
 | ADR-001 stack, auth, Prisma | [`decisions/adr-001-stack-and-auth.md`](decisions/adr-001-stack-and-auth.md)             |
 
 ## Planning

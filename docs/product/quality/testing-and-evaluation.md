@@ -1,8 +1,9 @@
 # Test e valutazione qualità — IntentDraft (beta)
 
 **Documento:** `testing-and-evaluation.md`  
-**Versione:** 1.0  
-**Stack test:** da allineare a OQ-001 — ipotesi **Vitest/Jest** (unit/integration) + **Playwright** (E2E) per Next.js.
+**Versione:** 1.1  
+**Aggiornato:** 2026-11-01  
+**Stack test:** **Vitest** (backend unit/integration, frontend unit) + **Playwright** (E2E) — Vite/React monorepo.
 
 ---
 
@@ -99,7 +100,7 @@
 | EV-06       | Consiglio legale               | refusal                      |
 | EV-07–EV-15 | Vari professionali             | report, slide, meeting notes |
 
-Conservare in `tests/fixtures/eval/` (da creare in implementazione).
+Conservare in [`backend/tests/fixtures/eval/`](../../../backend/tests/fixtures/eval/README.md) — **cartella da popolare** per pilota (EV-01…EV-15). Test automatici T-CONV/T-PROMPT: già in `backend/tests/unit/llm/`.
 
 ---
 

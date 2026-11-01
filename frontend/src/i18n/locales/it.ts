@@ -281,7 +281,7 @@ const it = {
   },
   limits: {
     title: 'Limiti e privacy',
-    body: 'IntentDraft genera testo (prompt) da usare in un LLM esterno. Non garantisce correttezza dei risultati. In questa fase demo i dati restano nel browser; con il backend i contenuti saranno salvati su MySQL in locale.',
+    body: 'IntentDraft interpreta la tua richiesta e genera istruzioni (prompt) da copiare o affinare. Non garantisce correttezza dei risultati. Con account e backend attivi, conversazioni e allegati sono salvati su database PostgreSQL (cloud Supabase). Se abiliti l’AI server-side, i testi necessari all’analisi possono essere inviati ad Anthropic Claude secondo la configurazione della piattaforma — le chiavi API restano solo sul server.',
   },
 };
 

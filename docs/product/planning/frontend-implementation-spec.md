@@ -1,9 +1,9 @@
 # Specifica implementazione frontend — IntentDraft
 
 **Documento:** `frontend-implementation-spec.md`  
-**Versione:** 1.3  
+**Versione:** 1.4  
 **Data:** 2026-10-29  
-**Ultimo aggiornamento checklist:** 2026-10-29 — implementazione agente completata (gate §17 parziale); **test manuali founder → §18**  
+**Ultimo aggiornamento:** 2026-11-01 — Fasi A/B/C **completate in codice**; **test manuali founder → §18**; stato repo → [`../decisions/implementation-amendments.md`](../decisions/implementation-amendments.md)  
 **Nome prodotto (canonico):** **IntentDraft** — slug repo/cartella `intentdraft` (OQ-006 aggiornato in `open-questions-and-decisions.md`).
 **Audience:** agente AI / sviluppatore che completa il frontend **prima** e **durante** l’integrazione backend  
 **Fonti:** tutta la cartella `docs/` (requirements, architecture, UX, ADR-001, roadmap FE, assessment repo) + codice attuale in `frontend/`
@@ -16,14 +16,14 @@
 
 Completare la **struttura frontend** dell’app web **IntentDraft** in modo che:
 
-1. **Fase A (pre-backend o backend stub):** esista un layer API tipizzato, adapter mock/reale, tipi allineati al DB, pagine auth/impostazioni pronte, UX chat allineata ai requisiti — **senza** dipendere da MySQL/Anthropic già funzionanti.
-2. **Fase B (backend FOUND-*):** sostituire persistenza mock con chiamate HTTP reali (`VITE_USE_MOCK=false`) cambiando **solo** adapter e bootstrap, non i componenti pagina.
-3. **Fase C (motore AI BETA-*):** sostituire `mockConversationEngine` con risposte server; UI già predisposta per stati `analyzing` / `clarifying` / `generating` / `prompt_ready`.
+1. **Fase A** — layer API, adapter mock/reale, UX chat: **✅**
+2. **Fase B** — persistenza HTTP (`VITE_USE_MOCK=false`), bootstrap `GET /api/auth/me`: **✅**
+3. **Fase C** — risposte orchestrator server (mock/LLM); stati `analyzing` / `clarifying` / `prompt_ready`: **✅**
 
 ### 1.2 Fuori scope di questo documento
 
-- Implementazione backend Node/Prisma/MySQL (solo **contratto** atteso).
-- Integrazione Anthropic (solo preparazione tipi e stati UI).
+- Implementazione dettagliata backend (vedi [`backend-implementation-plan.md`](backend-implementation-plan.md)).
+- Deploy produzione, pagamenti, team workspace.
 - Pagamenti, hosting produzione, team multi-tenant (OQ-007, OQ-012).
 - Esecuzione del prompt dentro IntentDraft (OQ-008 **Accepted** — output = testo copiabile).
 
@@ -52,59 +52,42 @@ Baseline per accettazione visiva e regressioni manuali — **non** sostituiscono
 
 Indice e descrizioni: [`../experience/screenshots/README.md`](../experience/screenshots/README.md). Dettaglio brand: [`../experience/frontend-brand-ui.md`](../experience/frontend-brand-ui.md) §3.1.
 
-### 1.4 Estensione richiesta dal founder (non ancora in FR ufficiali)
+### 1.4 Estensioni founder (implementate)
 
-| Feature | Stato docs prodotto | Istruzione implementazione |
-| ------- | ------------------- | -------------------------- |
-| **Login con Google** | Non in `product-requirements.md` / ADR-001 | **Must** per questa fase frontend: UI + flusso OAuth redirect; backend dovrà esporre endpoint documentati in §8.6 |
-| **Pagina / area impostazioni utente** | Parziale (solo menu ⚙ lingua/tema in navbar) | **Must**: profilo, password (se account locale), preferenze, logout, link privacy |
-
-Registrare in futuro **ADR-004** o aggiornamento OQ quando il backend implementa Google.
+| Feature | Stato repo |
+| ------- | ---------- |
+| **Login con Google** | UI + route BE B8; test manuali AUTH-06/07 con env Google |
+| **Impostazioni utente** | `/app/settings` — profilo, password, locale |
+| **Console admin** | `/app/admin` — vedi [`admin-capabilities-plan.md`](admin-capabilities-plan.md) |
 
 ---
 
 ## 2. Stato attuale del codice (`frontend/`)
 
-### 2.1 Completato (fase 1 mock — verifica umana pending)
+### 2.1 Completato (2026-11-01)
 
-| Area | File / modulo | Note |
-| ---- | ------------- | ---- |
-| Scaffold | Vite, TS, Tailwind, alias `@/` | `package.json`, `vite.config.ts` |
-| Routing | `HashRouter`, `AppRoutes.tsx` | Route: `/`, `/login`, `/register`, `/limits`, `/app` |
-| Layout | `MainLayout`, `Navbar`, footer + link limiti | |
-| Brand | `components/brand/*`, `brand-tokens.css` | Vedi `frontend-brand-ui.md` |
-| i18n | `i18n/` IT+EN | Locale in `localStorage` — migrare a `intentdraft_locale` |
-| Auth UI | `LoginPage`, `RegisterPage`, `ProtectedRoute` | Form zod + react-hook-form |
-| Auth mock | `store/authStore.ts` | Password in chiaro in localStorage — **solo demo** |
-| Chat UI | `ChatPage`, `ChatSidebar`, composer, risultato, copia | |
-| Mock engine | `lib/mockConversationEngine.ts` + pipeline in `conversationStore` | |
-| Conversazioni mock | `conversationStore.ts` + persist Zustand | `pinned`, `inProject` solo client |
-| Upload mock | `FileInputButton`, `fileBlobStore.ts` | Blob in IndexedDB/local |
-| UX | Sidebar collassabile, pin/progetto/rename/delete su **Recenti** | Delete **senza** modale conferma |
-| Modali | `ConfirmModal` | Solo rigenerazione prompt in `ChatPage` |
-| Config | `config/index.ts`, `.env.example` | `VITE_API_URL`, `VITE_USE_MOCK` |
-| Document preview | `DocumentPreviewPanel`, pdfjs | Extra rispetto a roadmap minima |
+| Area | Modulo | Note |
+| ---- | ------ | ---- |
+| API client | `src/api/client.ts`, `endpoints.ts` | `credentials: 'include'`, errori tipizzati |
+| Ports / adapter | `src/adapters/`, `PortsProvider` | Mock vs API via `VITE_USE_MOCK` |
+| Auth | Login/register/forgot/reset, Google OAuth UI | Bootstrap `GET /api/auth/me` |
+| Chat | `ChatPage`, `ChatSidebar`, bulk delete, progetti | Sync API via `apiConversationAdapter` |
+| Motore | `mockConversationEngine.ts` (mock mode) | API mode → orchestrator backend |
+| File | Upload multipart, preview PDF, download cookie | |
+| Settings / Admin | `/app/settings`, `/app/admin` | RBAC admin |
+| Test | Vitest client; Playwright smoke, smoke-api, responsive, admin | |
+| i18n / brand | IT+EN, dark/light | Screenshot: [`../experience/screenshots/`](../experience/screenshots/README.md) |
 
-### 2.2 Assente o stub (da implementare)
+### 2.2 Gap residui (pre-pilota)
 
-| Lacuna | Evidenza |
-| ------ | -------- |
-| Client HTTP / API | Nessuna cartella `src/api/` o `src/services/` |
-| Adapter mock ↔ API | `appConfig.useMock` usato solo per demo login banner |
-| Bootstrap sessione `GET /api/auth/me` | `ProtectedRoute` legge solo Zustand |
-| Logout server-side | `logout()` azzera solo stato locale |
-| Google OAuth | Nessun riferimento codice |
-| Pagina impostazioni / profilo | Solo `SettingsMenu` (lingua/tema) |
-| Schemas centralizzati | `schemas/index.ts` vuoto |
-| Hooks riusabili | `hooks/index.ts` vuoto |
-| Gestione errori API / retry | Non implementata |
-| Tipi `IntentModel` / `PromptArtifact` | Solo tipi semplificati in `conversation.ts` |
-| Allineamento schema DB | `Conversation` FE ≠ tabella MySQL (metadata pin/progetto) |
-| Test automatizzati | Nessun Vitest/Playwright in `frontend/` |
-| SEO OG | Helmet base; FE-082 non fatto |
-| Feedback utile/non utile | FR-017 Should — assente |
-| Contatore caratteri input | NFR-004 — assente in UI |
-| `error_fatal` UI state | Definito in UX doc, non in `ConversationUiPhase` |
+| Gap | Priorità | Nota |
+| --- | -------- | ---- |
+| Checklist §18 non eseguita | **P0** | Verifica manuale founder |
+| `error_fatal` UI state | P2 | UX doc — config server assente |
+| E2E T-E2E-02/04/05 in CI | P1 | Solo smoke parziale oggi |
+| Copy **Limiti e privacy** (FR-016) | P0 | Allineare a PostgreSQL + LLM server-side (i18n) |
+| Catalogo fixture EV file | P1 | `backend/tests/fixtures/eval/` |
+| React Query vs Zustand-only | P3 | Spec raccomandava; Zustand+adapter sufficiente in beta |
 
 ---
 
@@ -458,10 +441,9 @@ Il backend implementerà FOUND-*; il frontend **deve** essere scritto assumendo 
 | ------ | ---- | ---- | ------- |
 | POST | `/api/conversations/:id/messages` | `{ content, attachments?: fileIds[] }` | `201` `{ userMessage, assistantMessage?, conversationPhase?, prompt? }` |
 
-Pre-LLM: assistant stub (“Motore AI non collegato”).  
-Post-LLM: risposta completa con interpretazione/domande/prompt.
+**Implementato:** orchestrator server (mock engine se `LLM_ENABLED=false`, Anthropic ANALYZE/GENERATE se true). Risposta: `userMessage`, `assistantMessage`, `conversationPhase`, `prompt`, interpretazione.
 
-Endpoint aggiuntivi fase AI (preparare tipi FE, implementare adapter stub che throw `NOT_IMPLEMENTED`):
+Endpoint aggiuntivi (implementati):
 
 | POST | `/api/conversations/:id/regenerate` | `{ feedback? }` |
 | POST | `/api/conversations/:id/skip-clarification` | — |
@@ -675,7 +657,7 @@ Implementare `ErrorBoundary` route-level per crash React.
 4. Migrare sidebar lista a `useConversations`.
 5. Migrare send message / upload.
 6. Disabilitare `persist` middleware Zustand per dati server (`partialize` solo preferenze UI locali).
-7. Test con backend FOUND-013+ su MySQL locale.
+7. Test con backend su PostgreSQL (Supabase) locale/cloud.
 8. Rimuovere banner “mock” e account demo in build staging (`VITE_USE_MOCK=false`).
 
 ---

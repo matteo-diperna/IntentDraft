@@ -1,5 +1,7 @@
 # Valutazione della repository — IntentDraft
 
+> **Nota (2026-11-01):** documento di **discovery iniziale** (pre-codice). Stato attuale: [`../../../worklog.md`](../../../worklog.md) · [`../decisions/implementation-amendments.md`](../decisions/implementation-amendments.md).
+
 **Documento:** `repository-assessment.md`  
 **Versione:** 1.1  
 **Stato:** Basato su ispezione del 2026-10-25 · fase **PLAN-001**–**PLAN-011** completata  

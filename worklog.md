@@ -199,6 +199,7 @@ Spunta ogni voce solo quando verificata (build ok + prova manuale o test indicat
 | [`backend/README.md`](backend/README.md) | Setup Supabase |
 | [`frontend/README.md`](frontend/README.md) | Mock vs API, script test |
 | [`docs/product/architecture/cloud-deployment-guide.md`](docs/product/architecture/cloud-deployment-guide.md) | Deploy localhost → cloud, costi, provider, utenti globali |
+| [`docs/product/decisions/implementation-amendments.md`](docs/product/decisions/implementation-amendments.md) | Decisioni operative repo (Postgres, B0–B10, LLM, admin) |
 
 ---
 
@@ -532,20 +533,20 @@ Non bloccano un test interno se le verifiche manuali passano, ma compaiono in sp
 
 ---
 
-### F. Documentazione da riallineare (non blocca il test, evita errori di priorità)
+### F. Documentazione — allineamento (2026-11-01)
 
-Aggiornare quando possibile (commit doc-only):
+Sync doc ↔ decisioni/repo eseguito. Fonte emendamenti: [`docs/product/decisions/implementation-amendments.md`](docs/product/decisions/implementation-amendments.md).
 
-| Documento | Problema | Azione |
-| --------- | -------- | ------ |
-| [`beta-roadmap.md`](docs/product/planning/beta-roadmap.md) | FOUND/BETA molti `[ ]` ma codice fatto | Aggiornare stato Fase 4–9 o aggiungere nota “implementato 2026-10/11” |
-| [`backend-implementation-plan.md`](docs/product/planning/backend-implementation-plan.md) | Checklist B3–B10 ancora `[ ]` | Spuntare o aggiungere tabella stato reale |
-| [`technical-architecture.md`](docs/product/architecture/technical-architecture.md) | “Repository greenfield”, MySQL | PostgreSQL/Supabase, orchestrator attivo |
-| [`product-requirements.md`](docs/product/requirements/product-requirements.md) | Riferimenti MySQL NFR-013 | Nota Supabase + ADR |
-| [`frontend-implementation-spec.md`](docs/product/planning/frontend-implementation-spec.md) §2.2 | Lista “Assente” obsoleta | Sostituire con “Completato” + rimandare gap reali (error_fatal, E2E CI) |
-| [`testing-and-evaluation.md`](docs/product/quality/testing-and-evaluation.md) | Path `tests/fixtures/eval/` | Creare cartella + README quando si popola EV |
-| [`product/README.md`](docs/product/README.md) | Già aggiornato 2026-11-01 | Mantenere sync con worklog |
-| Root [`README.md`](../README.md) | UI preview aggiunto | OK |
+| Documento | Stato |
+| --------- | ----- |
+| `beta-roadmap.md`, `backend-implementation-plan.md`, `technical-architecture.md` | Aggiornati (Postgres, B0–B10) |
+| `product-requirements.md` v1.2, `open-questions-and-decisions.md` v1.3 | Aggiornati |
+| `frontend-implementation-spec.md` v1.4, `frontend-backend-operations.md` v1.1 | Aggiornati |
+| `frontend-roadmap.md`, `testing-and-evaluation.md`, `database-design.md` | Aggiornati |
+| `backend/tests/fixtures/eval/README.md` | Creato (EV da popolare) |
+| Copy i18n Limiti/privacy (FR-016) | Allineato in `frontend/src/i18n/locales/*.ts` |
+
+Manutenzione: dopo ogni milestone, aggiornare `implementation-amendments.md` + checklist in questo file.
 
 Screenshot UI: [`docs/product/experience/screenshots/README.md`](docs/product/experience/screenshots/README.md).
 

@@ -376,6 +376,7 @@ Approved FR/NFR: [`docs/product/requirements/product-requirements.md`](docs/prod
 | [`docs/product/planning/beta-roadmap.md`](docs/product/planning/beta-roadmap.md) | FOUND / BETA roadmap |
 | [`docs/product/ai/ai-prompt-engine-design.md`](docs/product/ai/ai-prompt-engine-design.md) | IntentModel and engine phases |
 | [`docs/product/ai/llm-routing-strategy.md`](docs/product/ai/llm-routing-strategy.md) | Three-phase LLM routing |
+| [`docs/product/decisions/implementation-amendments.md`](docs/product/decisions/implementation-amendments.md) | Implementation decisions vs historical docs |
 | [`docs/product/experience/user-journeys-and-ux.md`](docs/product/experience/user-journeys-and-ux.md) | Journeys and UI states |
 
 ---

@@ -1,6 +1,7 @@
 # Documentazione IntentDraft
 
-Indice generale della cartella `docs/`. Il codice applicativo vive in `frontend/` (e in futuro `backend/`).
+Indice generale della cartella `docs/`. Monorepo: `frontend/` + `backend/` + `docs/`.  
+**Allineamento decisioni ↔ codice:** [`product/decisions/implementation-amendments.md`](product/decisions/implementation-amendments.md) · stato operativo [`../worklog.md`](../worklog.md).
 
 ## Mappa
 

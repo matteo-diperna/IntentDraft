@@ -1,8 +1,8 @@
 # Piano implementazione backend — IntentDraft
 
 **Documento:** `backend-implementation-plan.md`  
-**Versione:** 1.0  
-**Data:** 2026-10-29  
+**Versione:** 1.1  
+**Data:** 2026-10-29 · **Stato implementazione:** 2026-11-01 (B0–B10 + admin)  
 **Audience:** founder, agente implementazione backend  
 **Prodotto UI:** **IntentDraft** (`frontend/` — Vite/React, adapter API pronti)  
 **Stack vincolante:** Node.js API + **Prisma** + **PostgreSQL (Supabase)** + cookie sessione (ADR-001, OQ-001/OQ-015)  
@@ -14,7 +14,7 @@
 
 Definire **tutti i passi** — dal repository vuoto a una **web app demo funzionante in localhost** — con:
 
-1. **Account reali** (register/login/logout, sessione cookie, persistenza MySQL).  
+1. **Account reali** (register/login/logout, sessione cookie, persistenza PostgreSQL).  
 2. **Chat end-to-end** collegata al frontend (`VITE_USE_MOCK=false`).  
 3. **Upload/download file** su filesystem locale.  
 4. **Percorso verso il valore prodotto** (interpretazione, chiarimenti, prompt copiabile) via motore conversazione server-side.
@@ -29,7 +29,7 @@ Il frontend implementa già il contratto HTTP in [`frontend-implementation-spec.
 | --------- | ---- | ----------------- | ------------- |
 | **M0** | Infra | `GET /api/health` → DB ok; FE mostra banner spento | No |
 | **M1** | Auth demo | Registrazione, login, logout, refresh `/app` mantiene sessione | No |
-| **M2** | Persistenza chat | Nuova chat, messaggi, titolo, pin/progetto, delete — sopravvivono a F5 | No (assistant stub) |
+| **M2** | Persistenza chat | Nuova chat, messaggi, titolo, pin/progetto, delete — sopravvivono a F5 | Orchestrator (non stub fisso) |
 | **M3** | File demo | Upload `.txt`/`.pdf` ≤ 5 MB, lista, download, delete | No |
 | **M4** | UX completa demo | Stesso flusso del mock FE (interpretazione, domande, prompt, rigenera, refusal) **senza** chiamate Claude | Motore **rule-based / port mock** lato server |
 | **M5** | Beta AI | Claude Sonnet (ANALYZE + GENERATE), `LLM_ENABLED=true` | Sì |
@@ -45,13 +45,13 @@ Il frontend implementa già il contratto HTTP in [`frontend-implementation-spec.
 
 | Area | Stato |
 | ---- | ----- |
-| Documentazione prodotto | Completa (`docs/product/`) |
-| Frontend IntentDraft | Fase 1–2 completata; adapter API; test Vitest + Playwright |
-| Cartella `backend/` | **Assente** — greenfield |
-| MySQL / Prisma | Non configurati in repo |
-| LLM | Rinviato (OQ-002); flag `LLM_ENABLED=false` |
+| Documentazione prodotto | Completa + [`../decisions/implementation-amendments.md`](../decisions/implementation-amendments.md) |
+| Frontend IntentDraft | Adapter API, admin UI, Playwright/Vitest |
+| Backend `backend/` | **Implementato** — Fastify, moduli auth/conv/file/admin, orchestrator, LLM |
+| PostgreSQL / Prisma | Supabase + migrazioni in repo |
+| LLM | B9 completato; default `LLM_ENABLED=false` |
 
-Roadmap ufficiale: [`beta-roadmap.md`](beta-roadmap.md) Fase 4 **FOUND-010+**. Questo piano **dettaglia e ordina** quei task con checklist eseguibile.
+**Prossimo lavoro (non coding):** verifiche manuali e pilota — [`../../../worklog.md`](../../../worklog.md). **Deploy INF (M6)** rinviato.
 
 ---
 
@@ -360,7 +360,7 @@ Segnare `[x]` solo con test verificati. ID collegati a [`beta-roadmap.md`](beta-
 
 - [x] **B2-001** Modello `idt_sess` + cookie plugin
 - [x] **B2-002** BE-A02 … BE-A05
-- [ ] **B2-003** Middleware `requireAuth` su route `/api/conversations/*`, `/api/users/*`, `/api/files/*` (middleware pronto; wiring in B3+)
+- [x] **B2-003** Middleware `requireAuth` su route protette (conversazioni, utenti, file, admin)
 - [x] **B2-004** DTO `User` identico al FE (`authProvider`, `hasPassword`)
 - [x] **B2-005** Test integrazione: T-AUTH-01, T-AUTH-02
 
@@ -368,71 +368,71 @@ Segnare `[x]` solo con test verificati. ID collegati a [`beta-roadmap.md`](beta-
 
 ### Fase B3 — Conversazioni CRUD (FOUND-020 backend, FR-022)
 
-- [ ] **B3-001** BE-C01 … BE-C05  
-- [ ] **B3-002** Titolo auto: PATCH title da primo messaggio user (mirror FE-104)  
-- [ ] **B3-003** `metadata.pinned` / `inProject` in PATCH  
-- [ ] **B3-004** FE: fix hydrate + create async (IF-04)  
+- [x] **B3-001** BE-C01 … BE-C05  
+- [x] **B3-002** Titolo auto da primo messaggio user  
+- [x] **B3-003** `metadata.pinned` / `inProject` in PATCH  
+- [x] **B3-004** FE: hydrate + create async (IF-04)  
 
 **DoD B3:** Sidebar FE con API; nuova chat e delete funzionano dopo F5.
 
 ### Fase B4 — Messaggi stub (FOUND-021)
 
-- [ ] **B4-001** BE-M01 versione stub §9.1  
-- [ ] **B4-002** Aggiornamento `updated_at` conversazione ad ogni messaggio  
+- [x] **B4-001** BE-M01 (evoluto in orchestrator B7 — non più stub fisso §9.1)  
+- [x] **B4-002** Aggiornamento `updated_at` conversazione ad ogni messaggio  
 
 **DoD B4:** Invio messaggio persistito; assistant stub visibile.
 
 ### Fase B5 — File (FOUND-035, FR-023)
 
-- [ ] **B5-001** BE-F01 multipart (field `file`)  
-- [ ] **B5-002** BE-F02, BE-F03, BE-F04  
-- [ ] **B5-003** Test T-FILE-01  
-- [ ] **B5-004** FE download URL assoluto già pronto (`downloadAttachment`)  
+- [x] **B5-001** BE-F01 multipart (field `file`)  
+- [x] **B5-002** BE-F02, BE-F03, BE-F04  
+- [x] **B5-003** Test T-FILE-01  
+- [x] **B5-004** FE download con cookie (`fetchFileBlob`)  
 
 **DoD B5:** Milestone **M3** completa.
 
 ### Fase B6 — Utente & prompt API (P1)
 
-- [ ] **B6-001** BE-U01, BE-U02  
-- [ ] **B6-002** BE-P01, BE-P02  
-- [ ] **B6-003** BE-P03, BE-P04 (delegano a orchestrator)  
-- [ ] **B6-004** BE-P05 feedback (store opzionale)  
+- [x] **B6-001** BE-U01, BE-U02  
+- [x] **B6-002** BE-P01, BE-P02  
+- [x] **B6-003** BE-P03, BE-P04 (orchestrator)  
+- [x] **B6-004** BE-P05 feedback  
 
 **DoD B6:** Settings page FE fully wired in API mode.
 
 ### Fase B7 — Motore mock server (M4)
 
-- [ ] **B7-001** Port `mockConversationEngine` → `mockEngine.ts`  
-- [ ] **B7-002** BE-M01 usa mockEngine; risposta `SendMessageResponse` ricca  
-- [ ] **B7-003** Regenerate / skip-clarification  
-- [ ] **B7-004** Refusal medico/legal (FR-012)  
-- [ ] **B7-005** Estendere §8 / DTO se servono campi interpretation — documentare  
+- [x] **B7-001** Port mock → `mockEngine.ts`  
+- [x] **B7-002** BE-M01 usa orchestrator; `SendMessageResponse` ricca  
+- [x] **B7-003** Regenerate / skip-clarification  
+- [x] **B7-004** Refusal medico/legal (FR-012)  
+- [x] **B7-005** DTO interpretation / pendingQuestions documentati in §8 FE spec  
 
 **DoD B7:** Scenario §18 CHAT-01…CHAT-09 manuali in API mode; Playwright smoke API.
 
 ### Fase B8 — Google OAuth (opzionale demo)
 
-- [ ] **B8-001** BE-G01 … BE-G03  
-- [ ] **B8-002** Utente Google: `hasPassword: false`  
-- [ ] **B8-003** Test manuale `AUTH-06`, `AUTH-07` (spec §18)  
+- [x] **B8-001** BE-G01 … BE-G03  
+- [x] **B8-002** Utente Google: `hasPassword: false`  
+- [ ] **B8-003** Test manuale `AUTH-06`, `AUTH-07` (spec §18) — richiede env Google  
 
 ### Fase B9 — Integrazione LLM (M5, BETA-060–065)
 
-- [ ] **B9-001** `LLM_ENABLED` + `anthropicClient`  
-- [ ] **B9-002** Prompt template ANALYZE / GENERATE versionati in repo  
-- [ ] **B9-003** Orchestrator stati §7 AI doc  
-- [ ] **B9-004** Persistenza `idt_prmt` + version increment  
-- [ ] **B9-005** Metriche token/costo log (NFR-010) — senza content  
-- [ ] **B9-006** Fixture test EV-01…EV-15 + T-CONV, T-PROMPT  
+- [x] **B9-001** `LLM_ENABLED` + `anthropicClient`  
+- [x] **B9-002** Prompt template ANALYZE / GENERATE (+ override admin DB)  
+- [x] **B9-003** Orchestrator stati §7 AI doc  
+- [x] **B9-004** Persistenza `idt_prmt` + version increment  
+- [x] **B9-005** Metriche token/costo (`idt_usag`) — senza content  
+- [ ] **B9-006** Fixture catalogo EV-01…EV-15 in `backend/tests/fixtures/eval/` (T-CONV/T-PROMPT unit ok)  
 
 **DoD B9:** Requisiti FR-002–012 soddisfatti con LLM reale; chiave solo in `.env` server.
 
 ### Fase B10 — Hardening & CI (BETA-042, BETA-070+)
 
-- [ ] **B10-001** Rate limiting auth/messages  
-- [ ] **B10-002** Suite `backend/tests/integration` con DB test (Docker)  
-- [ ] **B10-003** GitHub Actions: lint + test + build backend on PR  
-- [ ] **B10-004** Documento runbook incidenti (rotazione `SESSION_SECRET`, API key)  
+- [x] **B10-001** Rate limiting auth/messages  
+- [x] **B10-002** Suite `backend/tests/integration` (Postgres CI)  
+- [x] **B10-003** GitHub Actions: lint + test + build on PR  
+- [x] **B10-004** Runbook rotazione segreti (`docs/ops/secrets-rotation-runbook.md`)  
 
 ---
 
@@ -453,18 +453,18 @@ Mappatura [`testing-and-evaluation.md`](../quality/testing-and-evaluation.md): p
 
 Considerare raggiunta la **demo M3** quando:
 
-- [ ] MySQL + backend + frontend avviano con README unificato.  
-- [ ] Utente può registrarsi, usare chat, ricaricare pagina, ritrovare dati.  
-- [ ] Upload e download file funzionano.  
-- [ ] Nessun segreto nel bundle FE (`grep` ANTHROPIC / SESSION).  
-- [ ] `frontend` Playwright smoke passa ancora in mock; smoke API documentato.  
-- [ ] §18 spec FE **BE-01 … BE-04** (§18.9) verificabili manualmente.
+- [x] PostgreSQL + backend + frontend avviano (README + PM2 / `dev:all`).  
+- [x] Utente può registrarsi, usare chat, ricaricare pagina, ritrovare dati (**codice**).  
+- [x] Upload e download file (**codice**).  
+- [ ] Nessun segreto nel bundle FE — **verifica manuale** G4.  
+- [x] Playwright smoke mock + `smoke-api.spec.ts` in repo.  
+- [ ] §18 spec FE **BE-01 … BE-05** verificati manualmente.
 
 Considerare raggiunta la **demo prodotto M4/M5** quando:
 
-- [ ] Flussi CHAT completi §18 con API.  
-- [ ] T-CONV e T-PROMPT verdi (mock o LLM).  
-- [ ] FR Must tracciati in `product-requirements.md` §17 aggiornati.
+- [ ] Flussi CHAT completi §18 con API (manuale).  
+- [x] T-CONV e T-PROMPT verdi in unit/integration (mock/LLM test).  
+- [ ] FR Must **validati** in pilota — [`../../../worklog.md`](../../../worklog.md) §I.
 
 ---
 

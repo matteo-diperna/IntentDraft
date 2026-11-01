@@ -1,6 +1,6 @@
 # ADR-001 — Stack applicativo, auth e ORM
 
-**Stato:** `Accepted` (2026-10-25)  
+**Stato:** `Accepted` (2026-10-25) · emendamenti implementativi [`implementation-amendments.md`](implementation-amendments.md)  
 **Contesto:** multi-utente futuro, localhost, template UI scelto dal founder
 
 ---
@@ -34,7 +34,7 @@
 | Revoca logout / compromise | Immediata                            | Difficile senza blocklist        |
 | Multi-device               | Una riga per sessione                | Stesso, ma revoke harder         |
 | Scaling N utenti           | OK; domani Redis come store sessioni | OK ma revoke debole              |
-| Allineamento MySQL         | Naturale                             | Possibile ma duplicazione policy |
+| Allineamento PostgreSQL    | Naturale (Supabase)                  | Possibile ma duplicazione policy |
 
 **Futuro multi-tenant:** ogni query scoped by `user_id`; sessioni legate a `user_id`; opzionale `tenant_id` in evoluzione team/organizzazione.
 
@@ -42,9 +42,9 @@
 
 ## Decisione 3 — ORM (OQ-015)
 
-**Prisma** su MySQL.
+**Prisma** su **PostgreSQL** (Supabase in sviluppo; stesso schema in produzione futura).
 
-- Migrazioni dichiarative adatte a schema in crescita (conversazioni, file, prompt).
+- Migrazioni dichiarative adatte a schema in crescita (conversazioni, file, prompt, admin, usage LLM).
 - Tipi generati condivisibili con il frontend via package o OpenAPI.
 - Drizzle valido ma meno conveniente per onboarding e tooling team.
 

@@ -1,8 +1,9 @@
 # Decisioni aperte e registro decisioni — IntentDraft
 
 **Documento:** `open-questions-and-decisions.md`  
-**Versione:** 1.2  
-**Ultimo aggiornamento decisioni founder:** 2026-10-25
+**Versione:** 1.3  
+**Ultimo aggiornamento decisioni founder:** 2026-10-25  
+**Emendamenti implementativi (repo):** 2026-11-01 — [`implementation-amendments.md`](implementation-amendments.md)
 
 Legenda **stato:** `Open` | `Proposed` | `Accepted` | `Deferred`
 
@@ -12,11 +13,11 @@ Legenda **stato:** `Open` | `Proposed` | `Accepted` | `Deferred`
 
 | ID     | Decisione sintetica                                                                            |
 | ------ | ---------------------------------------------------------------------------------------------- |
-| OQ-001 | **Vite React TS** (template) + **API Node** + **Prisma/MySQL** (vedi ADR-001)                  |
+| OQ-001 | **Vite React TS** (template) + **API Node** + **Prisma/PostgreSQL** (Supabase — vedi ADR-001)   |
 | OQ-013 | Template [react-typescript-template](https://github.com/luismalamoc/react-typescript-template) |
 | OQ-014 | Cookie httpOnly + tabella **`idt_sess`**                                                       |
 | OQ-015 | **Prisma**                                                                                     |
-| OQ-002 | **Anthropic Claude Sonnet** — integrazione API **fase tardiva**                                |
+| OQ-002 | **Anthropic Claude Sonnet** — provider accettato; **integrato in repo** (`LLM_ENABLED`, B9)     |
 | OQ-003 | **C** — Persistenza server + DB (con account)                                                  |
 | OQ-004 | **A** — Prodotto generalista                                                                   |
 | OQ-005 | **A** — Solo uso locale / team (localhost), no hosting ora                                     |
@@ -24,7 +25,7 @@ Legenda **stato:** `Open` | `Proposed` | `Accepted` | `Deferred`
 | OQ-007 | Pagamenti **versione ufficiale v1**, non ora                                                   |
 | OQ-008 | **Solo testo prompt** — no esecuzione task nel prodotto                                        |
 | OQ-009 | **Upload file — Must** in beta                                                                 |
-| OQ-010 | **Auth utente subito** + **MySQL**                                                             |
+| OQ-010 | **Auth utente subito** + **DB relazionale** (PostgreSQL Supabase in implementazione)           |
 | OQ-012 | Hosting/privacy produzione **rinviati** — localhost                                            |
 | —      | Lingue **IT + EN**; pilota **notes / post LinkedIn**; requisiti FR approvati                   |
 
@@ -37,7 +38,7 @@ Legenda **stato:** `Open` | `Proposed` | `Accepted` | `Deferred`
 | Campo         | Valore                                                                                                       |
 | ------------- | ------------------------------------------------------------------------------------------------------------ |
 | **Stato**     | `Accepted` (rivisto con template UI)                                                                         |
-| **Decisione** | **Frontend:** Vite + React + TS (template OQ-013). **Backend:** Node API + **Prisma** + **MySQL**. Monorepo. |
+| **Decisione** | **Frontend:** Vite + React + TS (template OQ-013). **Backend:** Node API + **Prisma** + **PostgreSQL**. Monorepo. |
 | **Nota**      | Scelta originale Next monolith sostituita per allineamento al template e confini chiari multi-utente.        |
 | **ADR**       | [`adr-001-stack-and-auth.md`](adr-001-stack-and-auth.md)                                                     |
 
@@ -45,17 +46,17 @@ Legenda **stato:** `Open` | `Proposed` | `Accepted` | `Deferred`
 
 | Campo         | Valore                                                                           |
 | ------------- | -------------------------------------------------------------------------------- |
-| **Stato**     | `Accepted` (provider) · implementazione **`Deferred`**                           |
-| **Decisione** | **Anthropic — Claude Sonnet** quando si integrerà l’API                          |
-| **Nota**      | Fase iniziale: fondamenta FE/BE **senza** chiamate LLM; flag `LLM_ENABLED=false` |
-| **ADR**       | ADR-002 al kickoff integrazione (fase BETA-060+)                                 |
+| **Stato**     | `Accepted` · implementazione **completata** (2026-10-31, B9)                     |
+| **Decisione** | **Anthropic — Claude Sonnet** server-side ANALYZE/GENERATE                       |
+| **Nota**      | Default dev: `LLM_ENABLED=false` → mock engine; fallback su errore provider      |
+| **ADR**       | Sintesi ADR-002 in [`implementation-amendments.md`](implementation-amendments.md) §4 |
 
 ### OQ-003 — Persistenza conversazioni
 
 | Campo         | Valore                                |
 | ------------- | ------------------------------------- |
 | **Stato**     | `Accepted`                            |
-| **Decisione** | **C** — DB MySQL + utente autenticato |
+| **Decisione** | **C** — DB server + utente autenticato (**PostgreSQL** / Supabase in repo) |
 | **Schema**    | `database-design.md`                  |
 
 ### OQ-004 — Segmento
@@ -106,7 +107,7 @@ Legenda **stato:** `Open` | `Proposed` | `Accepted` | `Deferred`
 | Campo         | Valore                                         |
 | ------------- | ---------------------------------------------- |
 | **Stato**     | `Accepted`                                     |
-| **Decisione** | **Login/registrazione subito**; DBMS **MySQL** |
+| **Decisione** | **Login/registrazione subito**; persistenza **PostgreSQL** (founder doc citava MySQL; vedi emendamenti) |
 
 ### OQ-012 — Hosting e conformità
 
@@ -147,7 +148,7 @@ Legenda **stato:** `Open` | `Proposed` | `Accepted` | `Deferred`
 | Campo         | Valore                                           |
 | ------------- | ------------------------------------------------ |
 | **Stato**     | `Accepted`                                       |
-| **Decisione** | **Prisma** + MySQL                               |
+| **Decisione** | **Prisma** + **PostgreSQL**                      |
 | **Motivo**    | Migrazioni, tipi, adatto a crescita multi-utente |
 
 ---
@@ -157,7 +158,7 @@ Legenda **stato:** `Open` | `Proposed` | `Accepted` | `Deferred`
 | ID ADR  | Titolo                          | Stato                                                    |
 | ------- | ------------------------------- | -------------------------------------------------------- |
 | ADR-001 | Stack FE/BE + Prisma + sessioni | [`adr-001-stack-and-auth.md`](adr-001-stack-and-auth.md) |
-| ADR-002 | Anthropic Sonnet                | Da scrivere (pre-integrazione LLM)                       |
+| ADR-002 | Anthropic Sonnet                | [`implementation-amendments.md`](implementation-amendments.md) §4 (integrato B9) |
 | ADR-003 | (incluso in ADR-001)            | —                                                        |
 
 ---

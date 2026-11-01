@@ -16,7 +16,7 @@ Definire lo **schema relazionale** minimo per:
 - metadati file caricati (OQ-009 **Must** in beta);
 - snapshot dei prompt generati (output testuale principale del prodotto).
 
-Il motore **Anthropic Claude Sonnet** (OQ-002) è **accettato** ma l’integrazione API è **fase successiva**; lo schema deve già prevedere campi per messaggi assistant e prompt senza dipendere dal provider.
+Il motore **Anthropic Claude Sonnet** (OQ-002) è **integrato** in backend (`LLM_ENABLED`); lo schema include `idt_prmt`, `ai_state` su conversazioni, `idt_usag` per metriche admin. Vedi [`../decisions/implementation-amendments.md`](../decisions/implementation-amendments.md).
 
 ---
 

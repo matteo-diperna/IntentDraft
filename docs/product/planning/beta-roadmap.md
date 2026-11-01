@@ -1,8 +1,9 @@
 # Roadmap verso la prima beta — IntentDraft
 
 **Documento:** `beta-roadmap.md`  
-**Versione:** 1.1  
-**Stato:** decisioni founder registrate (2026-10-25) · **priorità implementazione = fondamenta FE/BE locali**
+**Versione:** 1.2  
+**Stato:** decisioni founder (2026-10-25) · **implementazione B0–B10 + admin completata in repo (2026-10-31)**  
+**Nota:** molte checkbox sotto erano pianificazione pre-codice; stato reale → [`../../../worklog.md`](../../../worklog.md) + [`../decisions/implementation-amendments.md`](../decisions/implementation-amendments.md). **Prossimo:** verifiche manuali e fase test pilota (non scaffold FOUND).
 
 Legenda priorità: **P0** critico | **P1** alto | **P2** medio
 
@@ -12,7 +13,7 @@ Legenda priorità: **P0** critico | **P1** alto | **P2** medio
 
 ```mermaid
 flowchart LR
-  F2[Decisioni OQ] --> FOUND[Fondamenta FE BE MySQL]
+  F2[Decisioni OQ] --> FOUND[Fondamenta FE BE Postgres]
   FOUND --> UI[Shell UI template]
   UI --> AI[Integrazione Claude Sonnet]
   AI --> CHAT[Flusso prompt completo]
@@ -71,7 +72,7 @@ flowchart LR
 
 - [X] BETA-010 — **OQ-001** Next.js + TypeScript — **P0**
 - [X] BETA-011 — **OQ-002** Anthropic Claude Sonnet (integrazione **rinviata**) — **P0**
-- [X] BETA-012 — **OQ-003** persistenza **MySQL + account** — **P1**
+- [X] BETA-012 — **OQ-003** persistenza **DB + account** (PostgreSQL Supabase) — **P1**
 - [X] BETA-013 — **OQ-005** localhost / solo team — **P0**
 - [X] BETA-014 — **OQ-008** output solo prompt testuale — **P1**
 - [X] BETA-015 — Scope beta: **Must** auth + upload; **Won't** pagamenti (ora) — **P1**
@@ -94,24 +95,24 @@ flowchart LR
 
 ## Fase 4 — Implementazione fondamenta (priorità attuale)
 
-**Obiettivo:** frontend + backend + MySQL per operazioni basilari (**senza LLM**).  
-**Dipende da:** Fase 2. **Doc:** `database-design.md`, `frontend-backend-operations.md`.
+**Obiettivo:** frontend + backend + PostgreSQL per operazioni basilari.  
+**Stato:** **[X] implementato** (B0–B5); validazione manuale in corso.
 
-- [ ] FOUND-010 — Monorepo `frontend/` (Vite) + `backend/` (Node API) + lint — **P0** _(FE: **[X]** vedi [`frontend-roadmap.md`](frontend-roadmap.md))_
-- [ ] FOUND-011 — Prisma + MySQL + `.env.example` — **P0**
-- [ ] FOUND-012 — Migrazioni schema v1 (`idt_user`, `idt_sess`, …) — **P0**
-- [ ] FOUND-013 — `POST/GET` auth (register, login, logout, me) — **P0** — FR-021
-- [X] FOUND-014 — Route protette + pagine login/register (**UI mock**) — **P0**
-- [X] FOUND-015 — i18n IT/EN (minimo navigazione + auth) — **P0** — FR-024
-- [X] FOUND-020 — CRUD conversazioni UI (lista, crea, dettaglio; mock localStorage) — **P0** — FR-022
-- [ ] FOUND-021 — API messaggi backend (persistenza; stub pre-LLM) — **P0**
-- [ ] FOUND-022 — Test integrazione auth + conversazione — **P1**
-- [ ] FOUND-035 — Upload file multipart + storage locale — **P0** — FR-023
-- [X] FOUND-036 — UI lista allegati + delete (mock) — **P1**
-- [X] FOUND-040 — Template UI: [react-typescript-template](https://github.com/luismalamoc/react-typescript-template) — **P1**
-- [X] FOUND-041 — Adattato template in `frontend/` (auth + chat, no Firebase) — **P1**
+- [X] FOUND-010 — Monorepo `frontend/` + `backend/` — **P0**
+- [X] FOUND-011 — Prisma + PostgreSQL (Supabase) + `.env.example` — **P0**
+- [X] FOUND-012 — Migrazioni schema v1 (`idt_*`) — **P0**
+- [X] FOUND-013 — Auth register/login/logout/me — **P0** — FR-021
+- [X] FOUND-014 — Route protette + login/register — **P0**
+- [X] FOUND-015 — i18n IT/EN — **P0** — FR-024
+- [X] FOUND-020 — CRUD conversazioni UI + API — **P0** — FR-022
+- [X] FOUND-021 — API messaggi + orchestrator — **P0**
+- [X] FOUND-022 — Test integrazione auth + conversazione — **P1**
+- [X] FOUND-035 — Upload file multipart — **P0** — FR-023
+- [X] FOUND-036 — UI allegati + delete — **P1**
+- [X] FOUND-040 — Template UI — **P1**
+- [X] FOUND-041 — Template adattato — **P1**
 
-**DoD:** flusso OP-A + OP-C + OP-F01 verde in locale; `LLM_ENABLED=false`.
+**DoD:** flusso OP-A + OP-C + OP-F verde in locale — **verificare** con worklog §18.
 
 ---
 
@@ -119,11 +120,11 @@ flowchart LR
 
 **Dipende da:** FOUND-010.
 
-- [ ] BETA-030 — Tipi `IntentModel`, `PromptArtifact` in repo — **P0**
-- [ ] BETA-031 — Definire tipi `IntentModel`, `PromptArtifact` (`ai-prompt-engine-design.md`) — **P0** — FR-002, FR-006
-- [ ] BETA-032 — Contratto API conversazione AI (analyze/generate/regenerate) — **P0** — dopo FOUND
-- [ ] BETA-033 — Documentazione avvio locale (MySQL + app) — **P0**
-- [ ] BETA-034 — ADR-002 Anthropic Sonnet + strategia 2-step — **P1**
+- [X] BETA-030 — Tipi IntentModel / PromptArtifact (backend `llm/intentModel.ts` + FE DTO) — **P0**
+- [X] BETA-031 — Schema allineato ad `ai-prompt-engine-design.md` — **P0**
+- [X] BETA-032 — Contratto API messaggi/regenerate/skip — **P0**
+- [X] BETA-033 — Documentazione avvio (README, backend/README, worklog) — **P0**
+- [X] BETA-034 — Anthropic 2-step — **P1** (vedi `implementation-amendments.md` §4)
 
 **Verifica:** contratti TypeScript + mock MSW.
 
@@ -133,10 +134,10 @@ flowchart LR
 
 **Dipende da:** FOUND-011, BETA-030.
 
-- [ ] BETA-040 — Modulo `llm/` Anthropic client (feature flag off fino a ready) — **P0** — NFR-002
-- [ ] BETA-041 — Modulo `validation/` input + output — **P0** — NFR-004
-- [ ] BETA-042 — CI minima (lint + unit test su PR) — **P1**
-- [ ] BETA-043 — Health endpoint — **P2**
+- [X] BETA-040 — Modulo `llm/` Anthropic + flag — **P0** — NFR-002
+- [X] BETA-041 — Validazione zod env/payload — **P0** — NFR-004
+- [X] BETA-042 — CI GitHub Actions — **P1**
+- [X] BETA-043 — Health endpoint — **P2**
 
 ---
 
@@ -144,13 +145,13 @@ flowchart LR
 
 **Dipende da:** FOUND-020+, BETA-040, integrazione LLM attiva.
 
-- [ ] BETA-050 — Layout chat + composer (FR-001, FR-014) — **P0**
-- [ ] BETA-051 — Pannello “Cosa ho capito” (FR-002, FR-011) — **P0**
-- [ ] BETA-052 — UI domande chiarimento + skip assunzione (FR-003–005) — **P0**
-- [ ] BETA-053 — Editor prompt + Copia/Rigenera/Nuova sessione (FR-008–010, FR-013) — **P0**
-- [ ] BETA-054 — Stati loading/error UX (FR-015) — **P0**
-- [ ] BETA-055 — Messaggi edge case vuoto/limite (FR-001, NFR-004) — **P0**
-- [ ] BETA-056 — Responsive base (NFR-007) — **P1**
+- [X] BETA-050 — Layout chat + composer — **P0**
+- [X] BETA-051 — Pannello “Cosa ho capito” — **P0**
+- [X] BETA-052 — Chiarimenti + skip — **P0**
+- [X] BETA-053 — Editor prompt + Copia/Rigenera — **P0**
+- [X] BETA-054 — Stati loading/error UX — **P0** _( `error_fatal` UI: gap minore)_
+- [X] BETA-055 — Edge case vuoto/limite — **P0**
+- [X] BETA-056 — Responsive base (Playwright) — **P1**
 
 **DoD:** T-E2E-01, T-E2E-03 verdi con LLM mock.
 
@@ -160,12 +161,12 @@ flowchart LR
 
 **Dipende da:** BETA-031, BETA-040, FOUND completata.
 
-- [ ] BETA-060 — Prompt template ANALYZE + parse IntentModel (FR-002–004) — **P0**
-- [ ] BETA-061 — Policy turni/domande in orchestrator (FR-004, FR-011) — **P0**
-- [ ] BETA-062 — Prompt template GENERATE + PromptArtifact (FR-006–007, FR-020) — **P0**
-- [ ] BETA-063 — Refusal fuori scope (FR-012) — **P0**
-- [ ] BETA-064 — Rigenerazione (FR-009) — **P1**
-- [ ] BETA-065 — Regressione fixture scenari 1–3 — **P1** — T-CONV, T-PROMPT
+- [X] BETA-060 — ANALYZE + IntentModel — **P0**
+- [X] BETA-061 — Policy turni/domande — **P0**
+- [X] BETA-062 — GENERATE + PromptArtifact — **P0**
+- [X] BETA-063 — Refusal fuori scope — **P0**
+- [X] BETA-064 — Rigenerazione — **P1**
+- [X] BETA-065 — Test T-CONV, T-PROMPT unit — **P1** _(catalogo EV file: da creare)_
 
 **DoD:** T-CONV-01..04, T-PROMPT-01..03 verdi.
 
@@ -175,10 +176,10 @@ flowchart LR
 
 **Dipende da:** BETA-040, BETA-050.
 
-- [ ] BETA-070 — Rate limiting (NFR-003) — **P0**
-- [ ] BETA-071 — Logging senza contenuto conversazione (NFR-005) — **P0**
-- [ ] BETA-072 — Pagina “Limiti e privacy” (FR-016, OQ-012) — **P0**
-- [ ] BETA-073 — Metriche token/costo per request (NFR-010) — **P1**
+- [X] BETA-070 — Rate limiting (NFR-003) — **P0**
+- [X] BETA-071 — Logging senza contenuto (NFR-005) — **P0**
+- [X] BETA-072 — Pagina “Limiti e privacy” (FR-016) — **P0** _(allineare copy i18n API mode)_
+- [X] BETA-073 — Metriche token/costo (NFR-010) — **P1** (`idt_usag`)
 - [ ] BETA-074 — Audit manuale no secret in client (NFR-001) — **P0**
 
 **DoD:** T-SEC-02, checklist G4.
@@ -189,10 +190,10 @@ flowchart LR
 
 **Dipende da:** Fase 6–8.
 
-- [ ] BETA-080 — Suite unit/integration con MSW — **P0**
-- [ ] BETA-081 — Suite E2E Playwright — **P0**
-- [ ] BETA-082 — Implementare T-ERR, T-SEC — **P0**
-- [ ] BETA-083 — Creare `tests/fixtures/eval/` EV-01..15 — **P1**
+- [X] BETA-080 — Suite unit/integration backend — **P0**
+- [X] BETA-081 — Playwright smoke + smoke-api — **P0** _(T-E2E completi in CI: gap)_
+- [X] BETA-082 — T-ERR, T-SEC parziali in integration/unit — **P0**
+- [ ] BETA-083 — Creare `backend/tests/fixtures/eval/` EV-01..15 — **P1**
 - [ ] BETA-084 — Sessione rubric con 2 revisori — **P1**
 - [ ] BETA-085 — Confronto baseline vs IntentDraft — **P1**
 - [ ] BETA-086 — Feedback utile/non utile (FR-017) — **P2**
@@ -236,8 +237,8 @@ flowchart LR
 - [ ] Tutti FR **Must** implementati (tracciabilità `product-requirements.md` §17)
 - [ ] NFR-001, NFR-002, NFR-003, NFR-004, NFR-005, NFR-009 verificati
 - [ ] Gate G1–G5 qualità
-- [ ] Auth + MySQL + upload verificati (FOUND)
-- [ ] LLM Sonnet integrato con chiavi solo server-side (NFR-001)
+- [ ] Auth + PostgreSQL + upload **verificati manualmente** (FOUND)
+- [X] LLM Sonnet integrato con chiavi solo server-side (NFR-001) — codice
 - [ ] Informativa limiti/privacy pubblicata
 - [ ] Runbook incidenti minimi (rotazione chiave API)
 - [ ] Nessun P0 bug aperto
@@ -279,7 +280,7 @@ flowchart LR
 
 ## Prossimo passo implementativo
 
-Iniziare **Fase 4 — FOUND-010** (scaffold Next.js + MySQL).
+**Fase test pilota (locale):** checklist §18 FE spec + worklog (verifiche API mode, B9 LLM reale, rubric EV). Vedi [`../../../worklog.md`](../../../worklog.md) § analisi gap §H–§I. **Deploy cloud:** dopo pilota (INF / M6).
 
 ---
 
